@@ -1,6 +1,6 @@
 #!/bin/bash
 
 echo "My IP address is $(hostname -I)"
-/home/pi/start-root.sh
+/home/pi/grid-bot/start-root.sh
 
 exit 0
