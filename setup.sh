@@ -27,6 +27,12 @@ else
     ln -s /dev/ttyUSB0 port
 fi
 
+# do graphical interface setups
+export LXDIR=${HOME}/.config/lxsession/LXDE-pi
+mkdir -p "${LXDIR}"
+cp "${HOME}/grid-bot/pi-ui-autostart" "${LXDIR}/autostart"
+chmod 755 "${LXDIR}/autostart"
+
 # download, expand, link node
 if [ ! -d node ]; then
     echo "downloading nodejs"

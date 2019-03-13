@@ -1,0 +1,4 @@
+@xset s noblank
+@xset s off
+@xset –dpms
+@chromium-browser --kiosk http://localhost:4080
