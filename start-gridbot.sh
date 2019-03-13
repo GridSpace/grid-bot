@@ -11,7 +11,7 @@ export WEBPORT=4080
 
 cd ${HOME}/grid-host
 while /bin/true; do
-	echo "--- starting ---"
+	echo "--- starting --- $(date)"
 	${NODE} src/serial.js --port=${TTY} --baud=${BAUD} --webport=${WEBPORT} --webdir=web/marlin --listen=${SOCKET} --filedir=${ROOT}/uploads
 	echo "--- exited ---"
 done

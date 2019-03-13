@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # require some packages
-which git || sudo apt -y install automake avrdude g++ git install nginx vim
+which vim || sudo apt -y install automake avrdude g++ git install nginx vim
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 
@@ -24,7 +24,7 @@ else
 fi
 
 # download, expand, link node
-if [ ! -f node ]; then
+if [ ! -d node ]; then
 	echo "downloading nodejs"
 	which wget || sudo apt -y install wget
 	wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv6l.tar.xz
@@ -33,7 +33,7 @@ if [ ! -f node ]; then
 fi
 
 # ensure node in path
-which node || echo "missing nodejs" && {
+grep grid-bot ${HOME}/.bashrc || {
 	echo "export PATH=\${PATH}:\${HOME}/grid-bot/node/bin" >> ${HOME}/.bashrc
 }
 
@@ -45,18 +45,22 @@ export PATH=${PATH}:${HOME}/grid-bot/node/bin
 	echo "installing grid-host"
 	cd ${HOME}
 	git clone https://github.com/GridSpace/grid-host.git grid-host
-	cd grid-host
-	npm i
 }
+
+# update grid-host modules
+cd "${HOME}/grid-host"
+npm i
 
 # install grid-apps
 [ ! -d "${HOME}/grid-apps" ] && {
 	echo "installing grid-apps"
 	cd ${HOME}
 	git clone https://github.com/GridSpace/grid-apps.git grid-apps
-	cd grid-apps
-	npm i
 }
+
+# update grid-apps modules
+cd "${HOME}/grid-apps"
+npm i
 
 # do required root setups
 [ ! -d "${HOME}/.grid" ] && sudo ${HOME}/grid-bot/setup-root.sh && mkdir "${HOME}/.grid"
