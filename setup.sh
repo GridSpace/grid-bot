@@ -13,6 +13,9 @@ cd ${HOME}
     git clone https://github.com/GridSpace/grid-bot.git
 }
 
+# do root setups
+[ ! -d "${HOME}/.grid" ] && sudo ${HOME}/grid-bot/setup-root.sh && mkdir "${HOME}/.grid"
+
 # link serial port usb device, create uploads dir
 cd ${HOME}/grid-bot
 rm port
