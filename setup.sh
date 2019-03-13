@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # require some packages
-which vim || sudo apt -y install automake avrdude g++ git nginx vim
+which vim || sudo apt -y install automake avrdude g++ git nginx unclutter vim
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 

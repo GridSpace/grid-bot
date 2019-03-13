@@ -2,3 +2,4 @@
 @xset s off
 @xset –dpms
 @chromium-browser --kiosk http://localhost:4080
+@unclutter -idle 0.1
