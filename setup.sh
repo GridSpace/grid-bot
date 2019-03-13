@@ -1,6 +1,17 @@
 #!/bin/bash
 
+# require some packages
+which git || sudo apt -y install automake avrdude g++ git install nginx vim
+
 [ -z "${HOME}" ] && echo "HOME not set" && exit
+
+cd ${HOME}
+
+# install grid-bot package if missing
+[ ! -d "${HOME}/grid-bot" ] && {
+    echo "fetching grid-bot"
+    git clone https://github.com/GridSpace/grid-bot.git
+}
 
 # link serial port usb device, create uploads dir
 cd ${HOME}/grid-bot
@@ -29,6 +40,7 @@ which node || echo "missing nodejs" && {
 # make sure npm will work
 export PATH=${PATH}:${HOME}/grid-bot/node/bin
 
+# install grid-host
 [ ! -d "${HOME}/grid-host" ] && {
 	echo "installing grid-host"
 	cd ${HOME}
@@ -37,11 +49,17 @@ export PATH=${PATH}:${HOME}/grid-bot/node/bin
 	npm i
 }
 
+# install grid-apps
+[ ! -d "${HOME}/grid-apps" ] && {
+	echo "installing grid-apps"
+	cd ${HOME}
+	git clone https://github.com/GridSpace/grid-apps.git grid-apps
+	cd grid-apps
+	npm i
+}
+
 # reminder to setup /etc/rc.local
 cat > /dev/stdout << EOF
 --- add the following lines to /etc/rc.local ---
-nohup nice -n -20 su -l -c /home/pi/start-gridbot.sh pi > /tmp/gridbot.log 2>&1 &
-nohup nice -n 19 su -l -c /home/pi/start-gridhost.sh pi > /tmp/gridhost.log 2>&1 &
-nohup nice -n 19 /home/pi/start-camera.sh > /tmp/camera.log 2>&1 &
+/home/pi/start-root.sh
 EOF
-
