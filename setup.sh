@@ -13,9 +13,6 @@ cd ${HOME}
     git clone https://github.com/GridSpace/grid-bot.git
 }
 
-# do root setups
-[ ! -d "${HOME}/.grid" ] && sudo ${HOME}/grid-bot/setup-root.sh && mkdir "${HOME}/.grid"
-
 # link serial port usb device, create uploads dir
 cd ${HOME}/grid-bot
 rm port
@@ -32,7 +29,7 @@ if [ ! -f node ]; then
 	which wget || sudo apt -y install wget
 	wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv6l.tar.xz
 	tar xf node-v10.15.3-linux-armv6l.tar.xz
-	ln -s node-v10.15.1-linux-armv6l node
+	ln -s node-v10.15.3-linux-armv6l node
 fi
 
 # ensure node in path
@@ -61,8 +58,5 @@ export PATH=${PATH}:${HOME}/grid-bot/node/bin
 	npm i
 }
 
-# reminder to setup /etc/rc.local
-cat > /dev/stdout << EOF
---- add the following lines to /etc/rc.local ---
-/home/pi/start-root.sh
-EOF
+# do required root setups
+[ ! -d "${HOME}/.grid" ] && sudo ${HOME}/grid-bot/setup-root.sh && mkdir "${HOME}/.grid"
