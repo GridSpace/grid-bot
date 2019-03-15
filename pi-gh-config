@@ -1,0 +1,12 @@
+{
+    "targets": {
+        "gridbot": {
+            "comment": "gridbot",
+            "driver": "grid",
+            "host": "localhost",
+            "port": 4000,
+            "web": "http://localhost:4080",
+            "image": "http://localhost/camera.jpg"
+        }
+    }
+}

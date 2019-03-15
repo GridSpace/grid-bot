@@ -7,18 +7,20 @@ which vim || sudo apt -y install automake avrdude g++ git nginx unclutter vim
 
 cd ${HOME}
 
+export ROOT="${HOME}/grid-bot"
+
 # install grid-bot package if missing
-[ ! -d "${HOME}/grid-bot" ] && {
+[ ! -d "${ROOT}" ] && {
     echo "fetching grid-bot"
     git clone https://github.com/GridSpace/grid-bot.git
 }
 
 # update grid-bot
-cd "${HOME}/grid-bot"
+cd "${ROOT}"
 git pull
 
 # link serial port usb device, create uploads dir
-cd ${HOME}/grid-bot
+cd ${ROOT}
 rm port
 mkdir -p uploads
 if [ -f /dev/ttyACM0 ]; then
@@ -30,7 +32,7 @@ fi
 # do graphical interface setups
 export LXDIR=${HOME}/.config/lxsession/LXDE-pi
 mkdir -p "${LXDIR}"
-cp "${HOME}/grid-bot/pi-ui-autostart" "${LXDIR}/autostart"
+cp "${ROOT}/pi-ui-autostart" "${LXDIR}/autostart"
 chmod 755 "${LXDIR}/autostart"
 
 # download, expand, link node
@@ -53,17 +55,19 @@ fi
 
 # ensure node in path
 grep grid-bot ${HOME}/.bashrc || {
-    echo "export PATH=\${PATH}:\${HOME}/grid-bot/node/bin" >> ${HOME}/.bashrc
+    echo "export PATH=\${PATH}:\${ROOT}/node/bin" >> ${HOME}/.bashrc
 }
 
 # make sure npm will work
-export PATH=${PATH}:${HOME}/grid-bot/node/bin
+export PATH=${PATH}:${ROOT}/node/bin
 
 # install grid-host
 [ ! -d "${HOME}/grid-host" ] && {
     echo "installing grid-host"
     cd ${HOME}
     git clone https://github.com/GridSpace/grid-host.git grid-host
+    # setup config pointing to local instance
+    cp pi-gh-config "grid-host/etc/config.json"
 }
 
 # update grid-host modules
@@ -84,7 +88,7 @@ git pull
 #npm i
 
 # do required root setups
-[ ! -d "${HOME}/.grid" ] && sudo ${HOME}/grid-bot/setup-root.sh && mkdir "${HOME}/.grid"
+[ ! -d "${HOME}/.grid" ] && sudo ${ROOT}/setup-root.sh && mkdir "${HOME}/.grid"
 
 # ssh setup/trust if desired
 [ ! -d "${HOME}/.ssh" ] && {
