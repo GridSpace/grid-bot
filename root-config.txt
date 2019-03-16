@@ -2,7 +2,7 @@
 over_voltage=6
 force_turbo=1
 
-# grid:bot ... for pi3 with touch display
+# grid:bot ... for pi3 with hdmi touch display
 max_usb_current=1
 hdmi_force_hotplug=1
 config_hdmi_boost=7
@@ -11,6 +11,10 @@ hdmi_mode=1
 hdmi_mode=87
 hdmi_drive=1
 hdmi_cvt 800 480 60 6 0 0 0
+
+# grid:bot ... fir pi3 with element14 7" touch display
+#dtoverlay=dwc2
+#dtoverlay=gpio-shutdown
 
 # grid:bot ... enable camera, set video mem
 start_x=1

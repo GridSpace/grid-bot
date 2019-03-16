@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # require some packages
-which vim || sudo apt -y install automake avrdude g++ git nginx unclutter vim
+sudo apt -y install automake avrdude g++ git nginx unclutter vim
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 
@@ -85,7 +85,7 @@ npm i
 # update grid-apps modules
 cd "${HOME}/grid-apps"
 git pull
-#npm i
+npm i
 
 # do required root setups
 [ ! -d "${HOME}/.grid" ] && sudo ${ROOT}/setup-root.sh && mkdir "${HOME}/.grid"
