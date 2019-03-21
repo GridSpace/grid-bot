@@ -6,6 +6,7 @@ sudo apt -y install automake avrdude g++ git nginx unclutter vim
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 
 cd ${HOME}
+rmdir *
 
 export ROOT="${HOME}/grid-bot"
 
@@ -94,6 +95,8 @@ npm i
 [ ! -d "${HOME}/.ssh" ] && {
     mkdir -p "${HOME}/.ssh"
     chmod 700 "${HOME}/.ssh"
+    # set new password
+    passwd
 }
 
 echo "reboot required"

@@ -10,6 +10,8 @@ cp /home/pi/grid-bot/root-rc.local /etc/rc.local
 apt -y update \
 && apt -y dist-upgrade \
 && dpkg-reconfigure tzdata \
-&& echo pi-gridbot > /etc/hostname \
-&& echo "127.0.0.1 pi-gridbot" >> /etc/hosts \
-&& passwd pi
+
+grep pi-gridbot /etc/hostname || (
+    echo pi-gridbot > /etc/hostname \
+    && echo "127.0.0.1 pi-gridbot" >> /etc/hosts
+)
