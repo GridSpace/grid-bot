@@ -50,8 +50,8 @@ if [ ! -d node ]; then
 fi
 
 # ensure node in path
-grep grid-bot ${HOME}/.bashrc || {
-    echo "export PATH=\${PATH}:\${ROOT}/node/bin" >> ${HOME}/.bashrc
+grep node ${HOME}/.bashrc || {
+    echo "export PATH=\${PATH}:${ROOT}/node/bin" >> ${HOME}/.bashrc
 }
 
 # make sure npm will work
