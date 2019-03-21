@@ -20,15 +20,10 @@ export ROOT="${HOME}/grid-bot"
 cd "${ROOT}"
 git pull
 
-# link serial port usb device, create uploads dir
+# uploads dir, remove legacy port link
 cd ${ROOT}
 rm port
 mkdir -p uploads
-if [ -f /dev/ttyACM0 ]; then
-    ln -s /dev/ttyACM0 port
-else
-    ln -s /dev/ttyUSB0 port
-fi
 
 # do graphical interface setups
 export LXDIR=${HOME}/.config/lxsession/LXDE-pi
