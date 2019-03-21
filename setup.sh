@@ -67,7 +67,7 @@ export PATH=${PATH}:${ROOT}/node/bin
     cd ${HOME}
     git clone https://github.com/GridSpace/grid-host.git grid-host
     # setup config pointing to local instance
-    cp pi-gh-config "grid-host/etc/config.json"
+    cp "grid-bot/pi-gh-config" "grid-host/etc/config.json"
 }
 
 # update grid-host modules
