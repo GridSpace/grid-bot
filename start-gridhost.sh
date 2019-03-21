@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export HOME=/home/pi
-export PATH=$PATH:$HOME/node/bin
+export PATH=$PATH:$HOME/grid-bot/node/bin
 
 cd $HOME/grid-host/
 while /bin/true; do
