@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # require some packages
-sudo apt -y install automake avrdude g++ git nginx unclutter vim
+sudo apt -y install automake avrdude g++ git nginx unclutter vim wget
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 
 cd ${HOME}
-rmdir *
+
+# quietly remove all empty directories
+rmdir * >/dev/null 2>&1
 
 export ROOT="${HOME}/grid-bot"
 
@@ -25,7 +27,7 @@ cd ${ROOT}
 rm port
 mkdir -p uploads
 
-# do graphical interface setups
+# setup graphical interface boot
 export LXDIR=${HOME}/.config/lxsession/LXDE-pi
 mkdir -p "${LXDIR}"
 cp "${ROOT}/pi-ui-autostart" "${LXDIR}/autostart"
@@ -34,7 +36,6 @@ chmod 755 "${LXDIR}/autostart"
 # download, expand, link node
 if [ ! -d node ]; then
     echo "downloading nodejs"
-    which wget || sudo apt -y install wget
     # for pi zero
     grep ARMv6 /proc/cpuinfo && {
         wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv6l.tar.xz
@@ -90,8 +91,7 @@ npm i
 [ ! -d "${HOME}/.ssh" ] && {
     mkdir -p "${HOME}/.ssh"
     chmod 700 "${HOME}/.ssh"
-    # set new password
-    passwd
 }
 
+echo "change pi user password"
 echo "reboot required"
