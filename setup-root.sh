@@ -18,6 +18,6 @@ cp /home/pi/grid-bot/root-rc.local /etc/rc.local
     && touch ${HOME}/.gb-tz
 
 grep pi-gridbot /etc/hostname || (
-    echo pi-gridbot > /etc/hostname \
+    echo pi-gridbot > /etc/hostname \\
     && echo "127.0.0.1 pi-gridbot" >> /etc/hosts
 )
