@@ -7,17 +7,17 @@ grep grid:bot /boot/config.txt || cat /home/pi/grid-bot/root-config.txt >> /boot
 cp /home/pi/grid-bot/root-rc.local /etc/rc.local
 
 # update pacakges
-[ ! -f ${HOME}/.gb-up ] \\
-    && apt -y update \\
-    && apt -y dist-upgrade && \\
+[ ! -f ${HOME}/.gb-up ] && \\
+    apt -y update && \\
+    apt -y dist-upgrade && \\
     touch ${HOME}/.gb-up
 
 # set timezone
-[ ! -f ${HOME}/.gb-tz ] \\
-    && dpkg-reconfigure tzdata \\
-    && touch ${HOME}/.gb-tz
+[ ! -f ${HOME}/.gb-tz ] && \\
+    dpkg-reconfigure tzdata && \\
+    touch ${HOME}/.gb-tz
 
 grep pi-gridbot /etc/hostname || (
-    echo pi-gridbot > /etc/hostname \\
-    && echo "127.0.0.1 pi-gridbot" >> /etc/hosts
+    echo pi-gridbot > /etc/hostname && \\
+    echo "127.0.0.1 pi-gridbot" >> /etc/hosts
 )
