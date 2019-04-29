@@ -3,7 +3,7 @@
 # for standalone operation, add the following line to /etc/rc.local
 # nohup nice -n 19 su -l -c /home/pi/start-camera.sh pi > /tmp/camera.log 2>&1 &
 
-cd /home/pi/grid-bot || cd /home/pi
+cd /home/pi/grid-bot >/dev/null 2>&1 || cd /home/pi
 
 while /bin/true; do
     [ -f etc/camera.conf ] && source etc/camera.conf
@@ -15,7 +15,8 @@ while /bin/true; do
        mkdir -p "${TIMELAPSE}/${DATE}"
        export TMPFILE="${TIMELAPSE}/${DATE}/${TIME}.jpg"
        if [ ! -z ${MAXAGE} ]; then
-           find ${TIMELAPSE} -type f -mtime +${MAXAGE} -delete
+           find ${TIMELAPSE} -type f -mtime ${MAXAGE} -print -delete
+           rmdir "${TIMELAPSE}/*" >/dev/null 2>&1
        fi
        if [ ! -z ${TRIGGER} ]; then
            if [ ! -f ${TRIGGER} ]; then
