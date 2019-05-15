@@ -5,6 +5,8 @@
 
 cd /home/pi/grid-bot >/dev/null 2>&1 || cd /home/pi
 
+which raspistill || exit
+
 while /bin/true; do
     [ -f etc/camera.conf ] && source etc/camera.conf
     export RUN=1
@@ -32,5 +34,5 @@ while /bin/true; do
         -l ${FILE_PERM:-/var/www/html/camera.jpg} \
         -t ${TIMEOUT:-500} \
         -ss ${EXPOSURE:-40000} \
-        -rot ${ROTATION:-90} || exit
+        -rot ${ROTATION:-90}
 done
