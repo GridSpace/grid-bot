@@ -6,6 +6,9 @@ grep grid:bot /boot/config.txt || cat /home/pi/grid-bot/root-config.txt >> /boot
 # update rc.local to start grid:bot services
 cp /home/pi/grid-bot/root-rc.local /etc/rc.local
 
+# allow tcp on x server
+grep ^xserver-allow-tcp=true /etc/lightdm/lightdm.conf || echo xserver-allow-tcp=true >> /etc/lightdm/lightdm.conf
+
 # update pacakges
 [ ! -f ${HOME}/.gb-up ] && \\
     apt -y update && \\
