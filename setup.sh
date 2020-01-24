@@ -21,6 +21,7 @@ export ROOT="${HOME}/grid-bot"
 # update grid-bot
 cd "${ROOT}"
 git pull
+npm i
 
 # uploads dir, remove legacy port link
 cd ${ROOT}
@@ -30,7 +31,7 @@ mkdir -p uploads
 # setup graphical interface boot
 export LXDIR=${HOME}/.config/lxsession/LXDE-pi
 mkdir -p "${LXDIR}"
-cp "${ROOT}/pi-ui-autostart" "${LXDIR}/autostart"
+cp "${ROOT}/bin/pi-ui-autostart" "${LXDIR}/autostart"
 chmod 755 "${LXDIR}/autostart"
 
 # download, expand, link node
@@ -63,8 +64,6 @@ export PATH=${PATH}:${ROOT}/node/bin
     echo "installing grid-host"
     cd ${HOME}
     git clone https://github.com/GridSpace/grid-host.git grid-host
-    # setup config pointing to local instance
-    cp "grid-bot/pi-gh-config" "grid-host/etc/config.json"
 }
 
 # update grid-host modules
@@ -85,7 +84,7 @@ git pull
 npm i
 
 # do required root setups
-[ ! -d "${HOME}/.grid" ] && sudo ${ROOT}/setup-root.sh && mkdir "${HOME}/.grid"
+[ ! -d "${HOME}/.grid" ] && sudo ${ROOT}/bin/setup-root.sh && mkdir "${HOME}/.grid"
 
 # ssh setup/trust if desired
 [ ! -d "${HOME}/.ssh" ] && {

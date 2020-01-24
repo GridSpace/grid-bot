@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # update config.txt with required fields
-grep grid:bot /boot/config.txt || cat /home/pi/grid-bot/root-config.txt >> /boot/config.txt
+grep grid:bot /boot/config.txt || cat /home/pi/grid-bot/etc/root-config.txt >> /boot/config.txt
 
 # update rc.local to start grid:bot services
-cp /home/pi/grid-bot/root-rc.local /etc/rc.local
+cp /home/pi/grid-bot/bin/root-rc.local /etc/rc.local
 
 # allow tcp on x server
 grep ^xserver-allow-tcp=true /etc/lightdm/lightdm.conf || echo xserver-allow-tcp=true >> /etc/lightdm/lightdm.conf
