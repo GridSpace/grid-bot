@@ -8,8 +8,8 @@ export OPTS='--web --listen --baud=${BAUD} --filedir=${ROOT}/uploads'
 
 cd ${ROOT}
 while /bin/true; do
-    [ -f etc/serial.conf ] && source etc/serial.conf
+    [ -f etc/server.conf ] && source etc/server.conf
 	echo "--- starting --- $(date)"
-	eval "${NODE} src/js/serial.js ${OPTS}"
+	eval "${NODE} src/js/server.js ${OPTS}"
 	echo "--- exited ---"
 done
