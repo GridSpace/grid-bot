@@ -551,6 +551,7 @@ function bed_clear() {
     try {
         status.print.clear = true;
         status.update = true;
+        send_status();
         fs.closeSync(fs.openSync(bedclear, 'w'));
     } catch (e) {
         console.log(e);
@@ -560,6 +561,7 @@ function bed_clear() {
 function bed_dirty() {
     status.print.clear = false;
     status.update = true;
+    send_status();
     if (is_bed_clear()) {
         try {
             fs.unlinkSync(bedclear);
@@ -637,6 +639,10 @@ function send_file(filename) {
         evtlog("error sending file", {error: true});
         console.log(e);
     }
+}
+
+function send_status(pretty) {
+    evtlog(JSON.stringify(status,undefined,pretty), {status: true});
 }
 
 function process_input(line, channel) {
@@ -729,7 +735,8 @@ function process_input_two(line, channel) {
             if (channel) {
                 channel.request_status = true;
             }
-            return evtlog(JSON.stringify(status,undefined,pretty), {status: true});
+            return send_status(pretty);
+            // return evtlog(JSON.stringify(status,undefined,pretty), {status: true});
     }
     if (line.indexOf("*update ") === 0) {
         let file = line.substring(8);
