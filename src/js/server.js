@@ -499,10 +499,6 @@ function process_port_output(line, update) {
         if (mti > 0 && eci > mti) {
             status.device.firm.auth = line.substring(mti + 13, eci).trim();
         }
-        // let uui = line.indexOf("UUID:");
-        // if (uui > 0) {
-        //     status.device.uuid = line.substring(uui + 5);
-        // }
     }
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
