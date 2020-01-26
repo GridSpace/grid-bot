@@ -9,7 +9,7 @@
  * firmwares.
  */
 
-const version = "Serial [009]";
+const version = "Serial [010]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
