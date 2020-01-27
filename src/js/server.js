@@ -84,8 +84,10 @@ let debug = opt.debug;          // debug and dump all data
 let extrude = true;             // enable / disable extrusion
 let onboot = [                  // commands to run on boot (useful for abort)
     "M155 S2",          // report temp every 2 seconds
-    "M114",             // get position
-    "M119"              // get endstop status
+    "M115",             // get firmware info
+    "M211",             // get endstop boundaries
+    "M119",             // get endstop status
+    "M114"              // get position
 ];
 let boot_abort = [
     "G21",              // metric units
@@ -135,6 +137,16 @@ const status = {
         firm: {                 // firmware version and author
             ver: "?",
             auth: "?"
+        },
+        min: {                  // read from M211
+            X: 0.0,
+            Y: 0.0,
+            Z: 0.0
+        },
+        max: {                  // read from M211
+            X: 300.0,
+            Y: 300.0,
+            Z: 300.0
         },
         ready: false,           // true when connected and post-init
         boot: 0,                // time of last boot
@@ -275,7 +287,6 @@ function on_serial_port() {
                 sport.write('\r\nM110 N0\r\n');
                 sport.flush();
                 onboot.push('M503')
-                onboot.push('M115')
                 on_serial_line('start');
                 on_serial_line('M900 ; forced start');
                 status.device.firm.ver = 'new';
@@ -500,6 +511,25 @@ function process_port_output(line, update) {
             status.device.firm.auth = line.substring(mti + 13, eci).trim();
         }
     }
+    // parse M211 output
+    if (line.indexOf("echo:Soft endstops:") >= 0) {
+        let minpos = line.indexOf("Min:");
+        let maxpos = line.indexOf("Max:");
+        if (minpos > 0 && maxpos > minpos) {
+            line.substring(minpos+5, maxpos)
+                .trim()
+                .split(' ')
+                .forEach(v => {
+                    status.device.min[v.charAt(0)] = parseFloat(v.substring(1));
+                });
+            line.substring(maxpos+5)
+                .trim()
+                .split(' ')
+                .forEach(v => {
+                    status.device.max[v.charAt(0)] = parseFloat(v.substring(1));
+                });
+        }
+    }
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
         let from = line.split(' ')[1];
@@ -544,13 +574,14 @@ function process_port_output(line, update) {
 };
 
 function bed_clear() {
+    status.print.clear = true;
+    status.update = true;
+    send_status();
     try {
-        status.print.clear = true;
-        status.update = true;
-        send_status();
         fs.closeSync(fs.openSync(bedclear, 'w'));
     } catch (e) {
         console.log(e);
+        evtlog("marking bed clear");
     }
 }
 
@@ -558,23 +589,26 @@ function bed_dirty() {
     status.print.clear = false;
     status.update = true;
     send_status();
-    if (is_bed_clear()) {
-        try {
-            fs.unlinkSync(bedclear);
-        } catch (e) {
-            console.log(e);
-        }
-        evtlog("marking bed dirty");
+    try {
+        fs.unlinkSync(bedclear);
+    } catch (e) {
+        console.log(e);
     }
+    evtlog("marking bed dirty");
 }
 
 function is_bed_clear() {
+    let old = status.print.clear;
     try {
-        let stat = fs.statSync(bedclear);
-        return status.print.clear = true;
+        fs.statSync(bedclear);
+        status.print.clear = true;
     } catch (e) {
-        return status.print.clear = false;
+        status.print.clear = false;
     }
+    if (status.print.clear !== old) {
+        status.update = true;
+    }
+    return status.print.clear;
 }
 
 function clear_dir(dir, remove) {
@@ -590,7 +624,7 @@ function send_file(filename) {
     if (!check_device_ready()) {
         return;
     }
-    if (!is_bed_clear()) {
+    if (!status.print.clear) {
         return evtlog("bed not marked clear. use *clear first", {error: true});
     }
     if (fs.statSync(filename).size === 0) {
