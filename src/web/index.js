@@ -105,7 +105,8 @@ function print(file, ext) {
         return firmware_update(file);
     }
     if (confirm(`start print "${file}"?`)) {
-        send(`*clearkick ${file}`);
+        send(`*clear`);
+        send(`*kick ${file}`);
     }
 }
 
