@@ -105,7 +105,7 @@ function print(file, ext) {
         return firmware_update(file);
     }
     if (confirm(`start print "${file}"?`)) {
-        send(`*clear`);
+        send('*clear');
         send(`*kick ${file}`);
     }
 }
@@ -117,6 +117,11 @@ function remove(file) {
             send('*list');
         }, 250);
     }
+}
+
+function off_go() {
+    if (alert_on_run()) return;
+    send('G0X0Y0');
 }
 
 function off_set() {
@@ -248,6 +253,7 @@ function clear_bed() {
 function print_next() {
     if (alert_on_run()) return;
     if (confirm(`start next print?`)) {
+        send('*clear');
         send('*kick');
     }
 }

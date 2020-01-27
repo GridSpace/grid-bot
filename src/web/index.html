@@ -64,14 +64,14 @@
                     <div class="row panel">
                         <div id="jog_set" class="row align_center justify_center">
                             <div class="col">
-                                <button id="j01" onclick="set_jog(0.1,this)">0.1</button>
-                                <button id="j05" onclick="set_jog(0.5,this)">0.5</button>
+                                <button id="j01" onclick="set_jog(0.01,this)">0.01</button>
+                                <button id="j05" onclick="set_jog(0.1,this)">0.1</button>
                                 <button id="j10" onclick="set_jog(1.0,this)">1.0</button>
                             </div>
                             <div class="col">
-                                <button id="j20" onclick="set_jog(2.0,this)">2</button>
-                                <button id="j50" onclick="set_jog(5.0,this)">5</button>
-                                <button id="j100" onclick="set_jog(10.0,this)">10</button>
+                                <button id="j20" onclick="set_jog(10.0,this)">10</button>
+                                <button id="j50" onclick="set_jog(50.0,this)">50</button>
+                                <button id="j100" onclick="set_jog(100.0,this)">100</button>
                             </div>
                         </div>
                     </div>
@@ -96,9 +96,9 @@
                     </div>
                     <div class="row panel grow align_center">
                         <div class="col">
+                            <button class="no-lm no-rm" onclick="off_set()">Go Origin</button>
                             <button class="no-lm no-rm" onclick="off_set()">Set Origin</button>
-                            <button class="no-lm no-rm" onclick="fan_on()">Fan On</button>
-                            <button class="no-lm no-rm" onclick="fan_off()">Fan Off</button>
+                            <button class="no-lm no-rm" onclick="off_clear()">Clear Origin</button>
                         </div>
                     </div>
                 </div>
