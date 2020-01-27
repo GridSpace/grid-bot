@@ -1226,6 +1226,8 @@ function grid_spool() {
         `stat=${stat}`
     ].join('&');
     const proto = grid.indexOf("https:") >= 0 ? https : http;
+    let timer = Date.now();
+    // console.log({up: grid, opts});
     proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
         const { headers, statusCode, statusMessage } = res;
         // console.log([headers, statusCode, statusMessage]);
@@ -1234,7 +1236,13 @@ function grid_spool() {
             body += data.toString();
         });
         res.on('end', () => {
+            timer = Date.now() - timer;
+            if (body === 'superceded') {
+                // we have overlapping outbound calls (bad on us)
+                return;
+            }
             if (body === 'reconnect') {
+                console.log({reconnect: timer});
                 setTimeout(grid_spool, 100);
             } else {
                 let [file, gcode] = body.split("\0");
@@ -1245,7 +1253,10 @@ function grid_spool() {
                         kick_named(path.join(filedir, file));
                     });
                 } else {
-                    console.log({body});
+                    if (body.length > 80) {
+                        body = body.split('\n').slice(0,10);
+                    }
+                    console.log({grid_up_reply: body, timer});
                 }
                 setTimeout(grid_spool, 1000);
             }
