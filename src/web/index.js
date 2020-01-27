@@ -130,14 +130,14 @@ function off_set() {
     if (last_set && last_set.pos) {
         let pos = last_set.pos;
         send(`M206 X-${pos.X} Y-${pos.Y}`);
-        send('M503');
+        send('M500');
     }
 }
 
 function off_clear() {
     if (alert_on_run()) return;
     send('M206 X0 Y0 Z0');
-    send('M503');
+    send('M500');
 }
 
 function fan_on() {
