@@ -119,13 +119,29 @@ function remove(file) {
     }
 }
 
-function off_go() {
+function clear_files() {
+    if (confirm('delete all files?')) {
+        for (file in files) {
+            send(`*delete ${file}`);
+        }
+        setTimeout(() => {
+            send('*list');
+        }, 500);
+    }
+}
+
+function center_go() {
+    let stat = last_set;
+    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F7000`);
+}
+
+function origin_go() {
     if (alert_on_run()) return;
     send('G0 X0 Y0');
     send('G0 Z0');
 }
 
-function off_set() {
+function origin_set() {
     if (alert_on_run()) return;
     if (last_set && last_set.pos) {
         let pos = last_set.pos;
@@ -134,7 +150,7 @@ function off_set() {
     }
 }
 
-function off_clear() {
+function origin_clear() {
     if (alert_on_run()) return;
     send('M206 X0 Y0 Z0');
     send('M500');
