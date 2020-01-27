@@ -104,11 +104,8 @@ function print(file, ext) {
     if (ext === "h") {
         return firmware_update(file);
     }
-    if (!last_set.print.clear) {
-        send('*clear');
-    }
     if (confirm(`start print "${file}"?`)) {
-        send(`*kick ${file}`);
+        send(`*clearkick ${file}`);
     }
 }
 
