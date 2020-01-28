@@ -131,6 +131,7 @@ const status = {
     },
     device: {
         addr: [],               // ip addresses
+        port: webport,          // admin port
         name: os.hostname(),    // device host name for web display
         uuid,
         version,                // version of code running
