@@ -9,7 +9,13 @@
  * firmwares.
  */
 
-const version = "Serial [011]";
+/**
+ * TODO cnc requires different onboot, boot_abort, boot_error
+ * TODO cnc should ignore bed clear/dirty disposition
+ * TODO
+ */
+
+const version = "Serial [012]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -331,6 +337,9 @@ function on_serial_line(line) {
     }
     status.device.line = Date.now();
     line = line.toString().trim();
+    if (line.length === 0) {
+        return;
+    }
     let matched = false;
     let istemp = false;
     let update = false;
@@ -358,6 +367,7 @@ function on_serial_line(line) {
             }
         });
     }
+    // look for M900 on a start (new serial connection, 8-bit controllers)
     if (starting && line.indexOf("M900 ") >= 0) {
         // look for end of output on newly opened port
         cmdlog("<-- " + line, {});
@@ -420,14 +430,6 @@ function on_serial_line(line) {
     }
     // status.buffer.match = match;
     status.buffer.collect = collect;
-    process_port_output(line, update);
-    process_queue();
-}
-
-function process_port_output(line, update) {
-    if (line.length === 0) {
-        return;
-    }
     // 8-bit marlin systems send "start" on a serial port open
     if (line === "start") {
         lineno = 1;
@@ -572,7 +574,8 @@ function process_port_output(line, update) {
     if (update) {
         status.update = true;
     }
-};
+    process_queue();
+}
 
 function bed_clear() {
     status.print.clear = true;
@@ -1131,6 +1134,7 @@ function write(line, flags) {
 let known = {}; // known files
 let printCache = {}; // cache of print
 
+/** scan file drop dir for reporting to client(s) */
 function check_file_dir(once) {
     if (!filedir) return;
     try {
