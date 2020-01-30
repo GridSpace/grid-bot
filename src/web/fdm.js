@@ -424,7 +424,43 @@ function showCommand() {
     $('command').focus();
 }
 
+let menu;
+let menu_selected;
+let page_selected;
+
+function menu_select(key) {
+    let menu = $(`menu-${key}`);
+    if (menu_selected) {
+        menu_selected.classList.remove("menu_sel");
+    }
+    menu.classList.add("menu_sel")
+    menu_selected = menu;
+    let page = $(`page-${key}`);
+    if (page_selected) {
+        page_selected.style.display = 'none';
+    }
+    page.style.display = 'flex';
+    page_selected = page;
+}
+
 function init() {
+    // bind left menu items and select default
+    menu = {
+        home: $('menu-home'),
+        move: $('menu-move'),
+        file: $('menu-file'),
+        comm: $('menu-comm'),
+        ctrl: $('menu-ctrl')
+    };
+    for (name in menu) {
+        let key = name.split('-')[0];
+        menu[name].onclick = () => {
+            menu_select(key);
+        };
+    }
+    menu_select('home');
+
+
     timeout = null;
     sock = new WebSocket(`ws://${document.location.hostname}:4080`);
     sock.onopen = (evt) => {
@@ -684,14 +720,12 @@ function init() {
         }
         ev.stopPropagation();
     };
-    $('b-ctrl').onclick = showControl;
-    $('b-cmd').onclick = showCommand;
     // reload page on status click
-    $('header').onclick = ev => {
-        if (ev.target.id === 'state') {
-            reload();
-        }
-    };
+    // $('header').onclick = ev => {
+    //     if (ev.target.id === 'state') {
+    //         reload();
+    //     }
+    // };
     // disable autocomplete
     let inputs = document.getElementsByTagName('input');
     for (let i=0; i<inputs.length; i++) {

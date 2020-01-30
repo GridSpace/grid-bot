@@ -16,6 +16,8 @@ body {
     font-family: sans-serif;
     align-items: center;
     justify-content: flex-start;
+    border-left: 1px solid white;
+    border-right: 1px dashed #ddd;
     border-bottom: 1px dashed #ddd;
     top: 0;
     left: 0;
@@ -32,23 +34,45 @@ body {
     overflow: hidden;
     position: fixed;
 }
-#left {
+
+#menu {
     width: 50px;
     font-size: 30px !important;
-    border-right: 1px solid black;
 }
-#left > div {
+#menu > div {
     display: flex;
     flex-direction: row;
-    x-height: 96px;
-    x-border-bottom: 1px solid black;
+    align-items: center;
+    align-content: stretch;
+    flex-grow: 1;
+    width: 48px;
+    border-bottom: 1px solid white;
+    border-right: 1px solid black;
+    border-left: 1px solid white;
+    border-top: 1px solid white;
 }
-#left > div:hover {
+#menu > div:hover {
     background-color: #eee;
 }
-#right {
-
+#menu > div > svg {
+    margin-left: auto;
+    margin-right: auto;
 }
+.menu_sel {
+    border-bottom: 1px solid black !important;
+    border-right: 1px solid #f4f4f4 !important;
+    border-left: 1px solid black !important;
+    border-top: 1px solid black !important;
+    background-color: #f4f4f4;
+}
+
+#pages > div {
+    display: none;
+    width: 750px;
+    height: 480px;
+    background-color: #f4f4f4;
+}
+
 div {
     margin: 0;
     border: 0;
