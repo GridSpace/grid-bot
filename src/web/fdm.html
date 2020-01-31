@@ -22,7 +22,7 @@
 
                     <input id="nozzle" value="" size="5" class="editable grow"></input>
                     <button class="up" id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
-                    
+
                     <input id="state"></input>
 
                     <button id="clear_bed" onclick="clear_bed()">clear bed</button>
@@ -139,10 +139,12 @@
                     <button class="no-lm no-rm" onclick="clear_files()">Clear Files</button>
                 </div>
 
-                <div id="page-comm">
-                    <button id="send">send</button>
-                    <input id="command"></input>
-                    <button id="clear">clear</button>
+                <div id="page-comm" class="col">
+                    <div class="row">
+                        <button id="send">send</button>
+                        <input id="command" class="grow"></input>
+                        <button id="clear">clear</button>
+                    </div>
                     <div id="log"></div>
                 </div>
 
