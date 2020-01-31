@@ -7,8 +7,10 @@ let files = {};
 let ready = false;
 let sock = null;
 let last_jog = null;
+let last_jog_speed = null;
 let last_set = {};      // last settings object
 let jog_val = 0.0;
+let jog_speed = 1000;
 let input = null;       // active input for keypad
 let settings = localStorage;
 let selected = null;
@@ -329,13 +331,24 @@ function set_jog(val, el) {
     }
     el.classList.add('bg_yellow');
     last_jog = el;
-    settings.jog_el = el.id;
+    settings.jog_sel = el.id;
     settings.jog_val = val;
+}
+
+function set_jog_speed(val, el) {
+    jog_speed = val;
+    if (last_jog_speed) {
+        last_jog_speed.classList.remove('bg_yellow');
+    }
+    el.classList.add('bg_yellow');
+    last_jog_speed = el;
+    settings.jog_speed_sel = el.id;
+    settings.jog_speed = val;
 }
 
 function jog(axis, dir) {
     if (alert_on_run()) return;
-    gr(`${axis}${dir * jog_val} F1000`);
+    gr(`${axis}${dir * jog_val} F${jog_speed}`);
 }
 
 function gr(msg) {
@@ -409,24 +422,21 @@ function init_filedrop() {
     });
 }
 
-function showControl() {
-    $('t-ctrl').style.display = 'flex';
-    $('t-cmd').style.display = 'none';
-    $('b-ctrl').style.display = 'none';
-    $('b-cmd').style.display = 'block';
-}
-
-function showCommand() {
-    $('t-ctrl').style.display = 'none';
-    $('t-cmd').style.display = 'flex';
-    $('b-ctrl').style.display = 'block';
-    $('b-cmd').style.display = 'none';
-    $('command').focus();
+function vids_update() {
+    let time = Date.now();
+    let img = new Image();
+    let url = `http://${location.hostname}/camera.jpg?time=${time}`;
+    img.onload = () => {
+        document.documentElement.style.setProperty('--video-url', `url(${url})`);
+        vids_timer = setTimeout(vids_update, 1000);
+    };
+    img.src = url;
 }
 
 let menu;
 let menu_selected;
 let page_selected;
+let vids_timer;
 
 function menu_select(key) {
     let menu = $(`menu-${key}`);
@@ -435,6 +445,7 @@ function menu_select(key) {
     }
     menu.classList.add("menu_sel")
     menu_selected = menu;
+
     let page = $(`page-${key}`);
     if (page_selected) {
         page_selected.style.display = 'none';
@@ -442,6 +453,12 @@ function menu_select(key) {
     page.style.display = 'flex';
     page_selected = page;
     settings.page = key;
+
+    clearTimeout(vids_timer)
+
+    if (key === 'vids') {
+        vids_update();
+    }
     if (key === 'comm') {
         $('command').focus();
     }
@@ -454,6 +471,7 @@ function init() {
         move: $('menu-move'),
         file: $('menu-file'),
         comm: $('menu-comm'),
+        vids: $('menu-vids'),
         ctrl: $('menu-ctrl')
     };
     for (name in menu) {
@@ -614,7 +632,7 @@ function init() {
         } else if (msg.indexOf("***") >= 0) {
             try {
                 log({wss_msg: msg});
-                showCommand();
+                menu_select('comm');
                 $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
                 $('comm-log').scrollTop = $('comm-log').scrollHeight;
             } catch (e) {
@@ -738,5 +756,6 @@ function init() {
     init_filedrop();
     input_deselect();
     // restore settings
-    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_el || "j10"));
+    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j10"));
+    set_jog_speed(parseFloat(settings.jog_speed) || 1, $(settings.jog_speed_sel || "js1000"));
 }

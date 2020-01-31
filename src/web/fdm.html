@@ -13,6 +13,7 @@
                 <div id="menu-move"><i class="fas fa-expand-arrows-alt"></i></div>
                 <div id="menu-file"><i class="fas fa-file-alt"></i></div>
                 <div id="menu-comm"><i class="fas fa-caret-square-right"></i></div>
+                <div id="menu-vids"><i class="fas fa-video"></i></div>
                 <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
             </div>
             <div id="pages" class="row grow">
@@ -105,6 +106,15 @@
                             <td><button onclick="extrude()">E+</button></td>
                         </tr>
                     </table>
+                    <div id="jog_speed" class="col align_center justify_center">
+                        <button id="js0500" onclick="set_jog_speed(500,this)">500</button>
+                        <button id="js1000" onclick="set_jog_speed(1000,this)">1000</button>
+                        <button id="js2000" onclick="set_jog_speed(2000,this)">2000</button>
+                        <button id="js3000" onclick="set_jog_speed(3000,this)">3000</button>
+                        <button id="js4000" onclick="set_jog_speed(4000,this)">4000</button>
+                        <button id="js5000" onclick="set_jog_speed(5000,this)">5000</button>
+                        <button id="js6000" onclick="set_jog_speed(6000,this)">6000</button>
+                    </div>
                     <div class="col">
                         <button class="no-lm no-rm" onclick="origin_go()">Goto Origin</button>
                         <button class="no-lm no-rm" onclick="origin_set()">Set Origin</button>
@@ -141,6 +151,9 @@
                         <button id="clear">clear</button>
                     </div>
                     <div id="comm-log"></div>
+                </div>
+
+                <div id="page-vids" class="col">
                 </div>
 
                 <div id="page-ctrl">

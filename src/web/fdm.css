@@ -1,3 +1,7 @@
+:root {
+    --video-url: url("data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=");
+}
+
 div,span {
     x-box-sizing: border-box;
 }
@@ -71,6 +75,14 @@ body {
     width: 750px;
     height: 480px;
     background-color: #f4f4f4;
+}
+
+#page-vids {
+    background: black;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: var(--video-url);
 }
 
 div {
