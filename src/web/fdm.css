@@ -162,7 +162,35 @@ input {
     background-color: #ffd !important;
 }
 
-#log {
+*:focus {
+    outline: none;
+}
+
+button {
+    padding: 3px 5px 3px 5px;
+    border-radius: 3px;
+}
+input {
+    padding: 3px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+input:focus {
+    background-color: #f5f5f5;
+}
+
+#comm-input {
+    background-color: white;
+    padding: 5px 5px 5px 5px;
+    border-bottom: 1px solid #ccc;
+}
+#comm-input > input {
+    padding: 3px 5px 3px 5px;
+}
+#comm-log {
+    padding: 0 5px 5px 5px;
     font-family: monospace;
     font-size: smaller;
     overflow-y: auto;

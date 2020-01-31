@@ -441,6 +441,10 @@ function menu_select(key) {
     }
     page.style.display = 'flex';
     page_selected = page;
+    settings.page = key;
+    if (key === 'comm') {
+        $('command').focus();
+    }
 }
 
 function init() {
@@ -458,7 +462,7 @@ function init() {
             menu_select(key);
         };
     }
-    menu_select('home');
+    menu_select(settings.page || 'home');
 
 
     timeout = null;
@@ -611,14 +615,14 @@ function init() {
             try {
                 log({wss_msg: msg});
                 showCommand();
-                $('log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-                $('log').scrollTop = $('log').scrollHeight;
+                $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+                $('comm-log').scrollTop = $('comm-log').scrollHeight;
             } catch (e) {
                 log({wss_msg: evt, err: e});
             }
         } else {
-            $('log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-            $('log').scrollTop = $('log').scrollHeight;
+            $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+            $('comm-log').scrollTop = $('comm-log').scrollHeight;
         }
     };
     let setbed = $('bed').onkeyup = ev => {
@@ -649,7 +653,7 @@ function init() {
         }
     };
     $('clear').onclick = () => {
-        $('log').innerHTML = '';
+        $('comm-log').innerHTML = '';
         $('command').focus();
     };
     let input_deselect = document.body.onclick = (ev) => {
