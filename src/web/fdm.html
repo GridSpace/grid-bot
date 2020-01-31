@@ -114,29 +114,24 @@
                     <button onclick="disable_motors()">disable motors</button>
                 </div>
 
-                <div id="page-file">
-                    <div id="files" class="panel">
-                        <label>files</label>
+                <div id="page-file" class="row grow">
+                    <div id="file-list-wrap" class="grow">
+                        <div id="file-list"></div>
                     </div>
-                    <div id="file-wrap" class="row panel label-group grow">
-                        <div id="file-list-wrap">
-                            <div id="file-list" class="over-y"></div>
+                    <div id="file-detail" class="col">
+                        <div id="file-info">
+                            <div><label>name:</label><span id="file-name">...</span></div>
+                            <div><label>date:</label><span id="file-date">...</span></div>
+                            <div><label>size:</label><span id="file-size">...</span></div>
+                            <div id="file-last"><label>time:</label><span id="file-print">...</span></div>
                         </div>
-                        <div id="file-detail" class="col">
-                            <div id="file-info">
-                                <div><label>name:</label><span id="file-name">...</span></div>
-                                <div><label>date:</label><span id="file-date">...</span></div>
-                                <div><label>size:</label><span id="file-size">...</span></div>
-                                <div id="file-last"><label>time:</label><span id="file-print">...</span></div>
-                            </div>
-                            <div class="grow"></div>
-                            <div id="file-actions" class="row">
-                                <button id="file-go" onclick="print_selected()">build</button>
-                                <button id="file-del" onclick="delete_selected()">delete</button>
-                            </div>
+                        <div class="grow"></div>
+                        <div id="file-actions" class="row">
+                            <button onclick="print_selected()">build</button>
+                            <button onclick="delete_selected()">delete</button>
+                            <button onclick="clear_files()">delete all</button>
                         </div>
                     </div>
-                    <button class="no-lm no-rm" onclick="clear_files()">Clear Files</button>
                 </div>
 
                 <div id="page-comm" class="col">
