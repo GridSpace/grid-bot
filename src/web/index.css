@@ -294,6 +294,7 @@ button {
 #settings {
     overflow-y: auto;
     min-height: 0;
+    background-color: #f8f8f8;
 }
 .settings:hover {
     background-color: #eee;
