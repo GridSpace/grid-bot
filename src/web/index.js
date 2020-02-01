@@ -539,13 +539,15 @@ function init() {
                     $('clear_bed').classList.add('bg_red');
                 }
                 if (status.print.run) {
-                    $('filename').classList.add('bg_green');
-                    $('progress').classList.add('bg_green');
-                    $('elapsed').classList.add('bg_green');
+                    $('state').classList.add('bg_green');
+                    // $('filename').classList.add('bg_green');
+                    // $('progress').classList.add('bg_green');
+                    // $('elapsed').classList.add('bg_green');
                 } else {
-                    $('filename').classList.remove('bg_green');
-                    $('progress').classList.remove('bg_green');
-                    $('elapsed').classList.remove('bg_green');
+                    $('state').classList.remove('bg_green');
+                    // $('filename').classList.remove('bg_green');
+                    // $('progress').classList.remove('bg_green');
+                    // $('elapsed').classList.remove('bg_green');
                 }
                 let duration = 0;
                 if (status.print.end && status.print.end > status.print.start) {
@@ -570,7 +572,7 @@ function init() {
                     $('bed_temp').classList.remove('bg_red');
                     $('bed_toggle').innerText = 'on';
                 }
-                $('bed_at').value = status.temp.bed;
+                $('bed_at').value = Math.round(status.temp.bed);
                 if (status.target.ext[0] > 0) {
                     if ($('nozzle_temp') !== input) {
                         $('nozzle_temp').value = status.target.ext[0];
@@ -584,7 +586,7 @@ function init() {
                     $('nozzle_temp').classList.remove('bg_red');
                     $('nozzle_toggle').innerText = 'on';
                 }
-                $('nozzle_at').value = status.temp.ext;
+                $('nozzle_at').value = Math.round(status.temp.ext);
             }
             if (status.pos) {
                 $('xpos').value = parseFloat(status.pos.X).toFixed(2);
@@ -775,11 +777,11 @@ function init() {
         ev.stopPropagation();
     };
     // reload page on status click
-    // $('header').onclick = ev => {
-    //     if (ev.target.id === 'state') {
-    //         reload();
-    //     }
-    // };
+    $('header').onclick = ev => {
+        if (ev.target.id === 'state') {
+            reload();
+        }
+    };
     // disable autocomplete
     let inputs = document.getElementsByTagName('input');
     for (let i=0; i<inputs.length; i++) {
