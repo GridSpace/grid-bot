@@ -15,7 +15,7 @@
  * TODO
  */
 
-const version = "Serial [012]";
+const version = "Serial [013]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -491,14 +491,11 @@ function on_serial_line(line) {
     if (line.indexOf("echo:  M") === 0) {
         line = line.substring(7).split(' ');
         let code = line.shift();
-        let desc = MCODE[code] || null;
         let map = {};
         line.forEach(tok => {
             map[tok.substring(0,1)] = parseFloat(tok.substring(1));
         });
-        if (desc) {
-            status.settings[code] = map;
-        }
+        status.settings[code] = map;
         update = true;
     }
     // parse M115 output

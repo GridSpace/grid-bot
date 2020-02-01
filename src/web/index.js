@@ -6,7 +6,7 @@ const MCODE = {
     M205: "advanced",
     M206: "home offset",
     M301: "pid tuning",
-    M420: "UBL",
+    M420: "bed leveling",
     M851: "z probe offset",
     M900: "linear advance",
     M906: "stepper current",
@@ -180,6 +180,14 @@ function origin_clear() {
     send('M500');
 }
 
+function probe_bed() {
+    if (alert_on_run()) return;
+    if (confirm('run bed level probe?')) {
+        send('G29 P1');
+        menu_select('comm');
+    }
+}
+
 function calibrate_pid() {
     if (alert_on_run()) return;
     if (confirm('run hot end PID calibration?')) {
@@ -344,7 +352,8 @@ function gr(msg) {
 }
 
 function send_confirm(message, what) {
-    if (confirm(`send "${what || message}?"`)) {
+    what = what || `send ${message}`;
+    if (confirm(`${what}?`)) {
         send(message);
     }
 }
