@@ -656,11 +656,12 @@ function init() {
             files = {};
             JSON.parse(trim).forEach(file => {
                 let uuid = (time++).toString(36);
-                let name = cleanName(file.name);
                 let ext = file.ext.charAt(0);
+                let name = cleanName(file.name);
+                let cname = ext === 'g' ? name : [name,ext].join('.');
                 files[name] = file;
                 file.uuid = uuid;
-                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${file.name}</label><button onclick="remove('${name}')">x</button></div>`);
+                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${cname}</label></div>`);
             });
             list.innerHTML = html.join('');
         } else if (msg.indexOf("***") >= 0) {

@@ -96,7 +96,7 @@ button {
 .menu_sel {
     border-bottom: 1px solid black !important;
     border-right: 1px solid #f4f4f4 !important;
-    border-left: 1px solid black !important;
+    border-left: 1px solid #f4f4f4 !important;
     border-top: 1px solid black !important;
     background-color: #f4f4f4;
 }
@@ -144,6 +144,7 @@ button {
 }
 .printing input {
     margin: 5px;
+    width: 300px;
 }
 .printing button {
     margin: 5px;
@@ -159,7 +160,10 @@ button {
 }
 #state {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    font-size: x-large;
+    font-weight: bold;
+    padding: 10px;
 }
 #bed_at,#nozzle_at,#bed_temp,#nozzle_temp {
     width: 60px;
