@@ -164,7 +164,7 @@ button {
 #keypad {
     position: absolute;
     right: 5px;
-    bottom: 50px;
+    bottom: 80px;
     z-index: 100000;
     border: 1px solid #ddd;
     background-color: #f8f8f8;

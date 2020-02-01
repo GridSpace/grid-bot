@@ -84,7 +84,11 @@
 
                     <div class="grow"></div>
 
-                    <button id="clear_bed" onclick="clear_bed()">clear bed</button>
+                    <div class="row">
+                        <button id="clear_bed" onclick="send('*clear;*status')" class="grow"><pre>clear bed</pre></button>
+                        <div class="five"></div>
+                        <button onclick="send('M410')" class="grow"><pre>emergency stop</pre></button>
+                    </div>
                 </div>
 
                 <div id="page-move" class="col">
@@ -108,12 +112,12 @@
                         <div class="col">
                             <button onclick="origin_set()">Set Origin</button>
                             <button onclick="origin_clear()">Clear Origin</button>
-                            <button onclick="origin_go()">Goto Origin</button>
+                            <button onclick="send_safe('G0X0Y0;G0Z0')">Goto Origin</button>
                         </div>
                         <div class="col">
                             <button onclick="center_go()">Goto Center</button>
-                            <button onclick="send_safe('M18')">Disable motors</button>
                             <button onclick="send_safe('M17')">Enable motors</button>
+                            <button onclick="send_safe('M18')">Disable motors</button>
                         </div>
                         <div class="grow"></div>
                     </div>
@@ -146,7 +150,7 @@
                                 </tr>
                                 <tr>
                                     <td><button onclick="jog('X',-1)">X-</button></td>
-                                    <td><button onclick="goto_home()" class="fa fa-home"></button></td>
+                                    <td><button onclick="send_safe('G28;M18')" class="fa fa-home"></button></td>
                                     <td><button onclick="jog('X',1)">X+</button></td>
                                 </tr>
                                 <tr>
@@ -226,14 +230,14 @@
                         </div>
                         <div class="col">
                             <label>Update</label>
-                            <button onclick="update_endstops()">endstops</button>
-                            <button onclick="update_position()">position</button>
-                            <button onclick="update_temps()">temps</button>
+                            <button onclick="send_safe('M119')">endstops</button>
+                            <button onclick="send_safe('M114')">position</button>
+                            <button onclick="send_safe('M105')">temps</button>
                         </div>
                         <div class="col">
                             <label>Run</label>
-                            <button onclick="fan_on()">fan on</button>
-                            <button onclick="fan_off()">fan off</button>
+                            <button onclick="send_safe('M106 255')">fan on</button>
+                            <button onclick="send_safe('M107')">fan off</button>
                             <button onclick="calibrate_pid()">nozzle pid</button>
                         </div>
                         <div class="col">

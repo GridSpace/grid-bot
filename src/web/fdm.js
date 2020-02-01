@@ -165,12 +165,6 @@ function center_go() {
     send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F7000`);
 }
 
-function origin_go() {
-    if (alert_on_run()) return;
-    send('G0 X0 Y0');
-    send('G0 Z0');
-}
-
 function origin_set() {
     if (alert_on_run()) return;
     if (last_set && last_set.pos) {
@@ -186,30 +180,12 @@ function origin_clear() {
     send('M500');
 }
 
-function fan_on() {
-    if (alert_on_run()) return;
-    send('M106 255');
-}
-
-function fan_off() {
-    if (alert_on_run()) return;
-    send('M107');
-}
-
 function calibrate_pid() {
     if (alert_on_run()) return;
     if (confirm('run hot end PID calibration?')) {
         send('M303 S220 C8 U1');
         menu_select('comm');
     }
-}
-
-function update_endstops() {
-    send('M119');
-}
-
-function update_temps() {
-    send('M105');
 }
 
 function update_position() {
@@ -274,28 +250,6 @@ function filament_load() {
 function filament_unload() {
     if (alert_on_run()) return;
     send('G0 E-700 F300');
-}
-
-function goto_home() {
-    if (alert_on_run()) return;
-    send('G28');
-    send('M18');
-}
-
-function disable_motors() {
-    if (alert_on_run()) return;
-    send('M18');
-}
-
-function stop_motors() {
-    if (alert_on_run()) return;
-    send('M410');
-}
-
-function clear_bed() {
-    if (alert_on_run()) return;
-    send('*clear');
-    send('*status');
 }
 
 function print_next() {
@@ -387,6 +341,12 @@ function gr(msg) {
     send('G91');
     send(`G0 ${msg}`);
     send('G90');
+}
+
+function send_confirm(message, what) {
+    if (confirm(`send "${what || message}?"`)) {
+        send(message);
+    }
 }
 
 function send_safe(message) {
