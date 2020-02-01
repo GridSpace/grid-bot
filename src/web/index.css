@@ -152,6 +152,9 @@ button {
 .heating button {
     width: 50px;
 }
+.heating input {
+    text-align: center;
+}
 #page-home button {
     margin-bottom: 5px;
 }
@@ -204,7 +207,8 @@ button {
 }
 #file-list-wrap, #file-detail {
     overflow-y: auto;
-    margin: 10px;
+    margin: 10px 0 10px 10px;
+    background: #fafafa;
 }
 #file-list {
     font-family: monospace;
@@ -214,6 +218,9 @@ button {
 #file-list label {
     font-size: x-large;
     overflow-x: hidden;
+}
+#file-list div:nth-child(1n+2) {
+    border-top: 1px dashed #ddd;
 }
 #file-list button {
     font-size: smaller;
@@ -282,6 +289,7 @@ button {
 }
 #page-ctrl button {
     font-size: medium !important;
+    flex-shrink: 0;
 }
 #settings {
     overflow-y: auto;
