@@ -16,6 +16,7 @@ body {
     border: 0;
     padding: 0;
     position: fixed;
+    background-color: #ddd;
 }
 div {
     margin: 0;
@@ -40,6 +41,9 @@ input {
 }
 input:focus {
     background-color: #f9f9f9;
+}
+input:disabled {
+    color: #111;
 }
 button {
     padding: 5px 8px 5px 8px;
@@ -77,10 +81,10 @@ button {
     align-content: stretch;
     flex-grow: 1;
     width: 48px;
-    border-bottom: 1px solid white;
+    border-bottom: 1px solid #ddd;
     border-right: 1px solid black;
-    border-left: 1px solid white;
-    border-top: 1px solid white;
+    border-left: 1px solid #ddd;
+    border-top: 1px solid #ddd;
 }
 #menu > div:hover {
     background-color: #eee;
