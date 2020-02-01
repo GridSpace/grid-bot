@@ -777,7 +777,7 @@ function init() {
         ev.stopPropagation();
     };
     // reload page on status click
-    $('header').onclick = ev => {
+    $('page-home').onclick = ev => {
         if (ev.target.id === 'state') {
             reload();
         }
