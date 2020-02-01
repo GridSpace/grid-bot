@@ -1,3 +1,19 @@
+const MCODE = {
+    M92:  "steps per",
+    M201: "accel max",
+    M203: "feedrate max",
+    M204: "accel",
+    M205: "advanced",
+    M206: "home offset",
+    M301: "pid tuning",
+    M420: "UBL",
+    M851: "z probe offset",
+    M900: "linear advance",
+    M906: "stepper current",
+    M913: "hybrid threshold",
+    M914: "stallguard threshold"
+};
+
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
 let timeout = null;
@@ -9,6 +25,7 @@ let sock = null;
 let last_jog = null;
 let last_jog_speed = null;
 let last_set = {};      // last settings object
+let last_hash = '';     // last settings hash
 let jog_val = 0.0;
 let jog_speed = 1000;
 let input = null;       // active input for keypad
@@ -42,10 +59,6 @@ function alert_on_run() {
 
 function reload() {
     document.location = document.location;
-}
-
-function camera() {
-    window.location = '/camera.html';
 }
 
 function update_code() {
@@ -172,6 +185,7 @@ function calibrate_pid() {
     if (alert_on_run()) return;
     if (confirm('run hot end PID calibration?')) {
         send('M303 S220 C8 U1');
+        menu_select('comm');
     }
 }
 
@@ -199,6 +213,7 @@ function eeprom_restore() {
     if (confirm('restore eeprom settings')) {
         send('M501');
         send('M503');
+        settings_done = false;
     }
 }
 
@@ -216,7 +231,7 @@ function bed_toggle() {
 }
 
 function bed_temp() {
-    return parseInt($('bed').value || '0');
+    return parseInt($('bed_temp').value || '0');
 }
 
 function nozzle_toggle() {
@@ -233,7 +248,7 @@ function nozzle_toggle() {
 }
 
 function nozzle_temp() {
-    return parseInt($('nozzle').value || '0');
+    return parseInt($('nozzle_temp').value || '0');
 }
 
 function filament_load() {
@@ -357,10 +372,15 @@ function gr(msg) {
     send('G90');
 }
 
+function send_safe(message) {
+    if (alert_on_run()) return;
+    send(message);
+}
+
 function send(message) {
     if (ready) {
         // log({send: message});
-        sock.send(message);
+        message.split(";").map(v => v.trim()).forEach(m => sock.send(m));
     } else {
         // log({queue: message});
         queue.push(message);
@@ -482,7 +502,6 @@ function init() {
     }
     menu_select(settings.page || 'home');
 
-
     timeout = null;
     sock = new WebSocket(`ws://${document.location.hostname}:4080`);
     sock.onopen = (evt) => {
@@ -560,34 +579,32 @@ function init() {
             }
             if (status.target) {
                 if (status.target.bed > 0) {
-                    if ($('bed') !== input) {
-                        $('bed').value = status.target.bed;
+                    if ($('bed_temp') !== input) {
+                        $('bed_temp').value = status.target.bed;
                         // $('bed').classList.add('bg_red');
                     }
                     $('bed_temp').classList.add('bg_red');
                     $('bed_toggle').innerText = 'off';
                 } else {
-                    if ($('bed') !== input) {
-                        $('bed').value = 0;
+                    if ($('bed_temp') !== input) {
+                        $('bed_temp').value = 0;
                     }
                     $('bed_temp').classList.remove('bg_red');
                     $('bed_toggle').innerText = 'on';
                 }
-                $('bed_temp').value = parseInt(status.temp.bed || 0);
                 if (status.target.ext[0] > 0) {
-                    if ($('nozzle') !== input) {
-                        $('nozzle').value = status.target.ext[0];
+                    if ($('nozzle_temp') !== input) {
+                        $('nozzle_temp').value = status.target.ext[0];
                     }
                     $('nozzle_temp').classList.add('bg_red');
                     $('nozzle_toggle').innerText = 'off';
                 } else {
-                    if ($('nozzle') !== input) {
-                        $('nozzle').value = 0;
+                    if ($('nozzle_temp') !== input) {
+                        $('nozzle_temp').value = 0;
                     }
                     $('nozzle_temp').classList.remove('bg_red');
                     $('nozzle_toggle').innerText = 'on';
                 }
-                $('nozzle_temp').value = parseInt(status.temp.ext[0] || 0);
             }
             if (status.pos) {
                 $('xpos').value = parseFloat(status.pos.X).toFixed(2);
@@ -617,6 +634,38 @@ function init() {
                 if (min.y === ' TRIGGERED') $('ypos').classList.add('bg_yellow');
                 if (min.z === ' TRIGGERED') $('zpos').classList.add('bg_yellow');
             }
+            if (status.settings) {
+                let valuehash = '';
+                let html = ['<table>'];
+                let bind = [];
+                for (let key in status.settings) {
+                    let map = status.settings[key];
+                    html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
+                    for (let k in map) {
+                        let bk = `ep-${key}-${k}`;
+                        let bv = [key, k];
+                        html.push(`<th>${k}</th>`);
+                        html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
+                        valuehash += [k,map[k]].join('');
+                        bind.push({bk,bv});
+                    }
+                    html.push('</tr>');
+                }
+                html.push('</table>');
+                if (valuehash !== last_hash) {
+                    $('settings').innerHTML = html.join('');
+                    bind.forEach(el => {
+                        let {bk, bv} = el;
+                        let input = $(bk);
+                        input.onkeyup = (ev) => {
+                            if (ev.keyCode === 13) {
+                                send_safe(`${bv[0]} ${bv[1]}${input.value.trim()}`);
+                            }
+                        };
+                    });
+                }
+                last_hash = valuehash;
+            }
         } else if (msg.indexOf("*** [") >= 0) {
             let list = $('file-list');
             let html = [];
@@ -626,7 +675,7 @@ function init() {
                 let name = cleanName(file.name);
                 let ext = file.ext.charAt(0);
                 files[name] = file;
-                html.push(`<div class="row"><span>${ext}</span><label onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')">${name}</label><button onclick="remove('${name}')">x</button></div>`);
+                html.push(`<div class="row"><span>${ext}</span><label class="grow" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')">${name}</label><button onclick="remove('${name}')">x</button></div>`);
             });
             list.innerHTML = html.join('');
         } else if (msg.indexOf("***") >= 0) {
@@ -643,7 +692,7 @@ function init() {
             $('comm-log').scrollTop = $('comm-log').scrollHeight;
         }
     };
-    let setbed = $('bed').onkeyup = ev => {
+    let setbed = $('bed_temp').onkeyup = ev => {
         if (ev === 42 || ev.keyCode === 13) {
             send('M140 S' + bed_temp());
             send('M105');
@@ -651,7 +700,7 @@ function init() {
             input_deselect();
         }
     };
-    let setnozzle = $('nozzle').onkeyup = ev => {
+    let setnozzle = $('nozzle_temp').onkeyup = ev => {
         if (ev === 42 || ev.keyCode === 13) {
             send('M104 S' + nozzle_temp());
             send('M105');
@@ -681,40 +730,40 @@ function init() {
         }
         $('keypad').style.display = 'none';
     };
-    $('nozzle').onclick = (ev) => {
+    $('nozzle_temp').onclick = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
-            $('nozzle').setSelectionRange(10, 10);
+            $('nozzle_temp').setSelectionRange(10, 10);
         }
-        input = $('nozzle');
+        input = $('nozzle_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
             input.value = settings.default_nozzle || '220';
         }
         ev.stopPropagation();
     };
-    $('nozzle').ondblclick = (ev) => {
-        let sel = $('nozzle');
+    $('nozzle_temp').ondblclick = (ev) => {
+        let sel = $('nozzle_temp');
         if (sel.value !== '0' && confirm('set default nozzle temp')) {
             settings.default_nozzle = sel.value;
         }
     }
-    $('bed').onclick = (ev) => {
+    $('bed_temp').onclick = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
-            $('bed').setSelectionRange(10, 10);
+            $('bed_temp').setSelectionRange(10, 10);
         }
-        input = $('bed');
+        input = $('bed_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
             input.value = settings.default_bed || '55';
         }
         ev.stopPropagation();
     };
-    $('bed').ondblclick = (ev) => {
-        let sel = $('bed');
+    $('bed_temp').ondblclick = (ev) => {
+        let sel = $('bed_temp');
         if (sel.value !== '0' && confirm('set default bed temp')) {
             settings.default_bed = sel.value;
         }
@@ -734,10 +783,10 @@ function init() {
         }
     };
     $('kp-ok').onclick = (ev) => {
-        if (input === $('bed')) {
+        if (input === $('bed_temp')) {
             setbed(42);
         }
-        if (input === $('nozzle')) {
+        if (input === $('nozzle_temp')) {
             setnozzle(42);
         }
         ev.stopPropagation();

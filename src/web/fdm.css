@@ -15,6 +15,36 @@ body {
     padding: 0;
     position: fixed;
 }
+div {
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+td {
+    text-align: center;
+}
+label {
+    font-size: large;
+    margin: 5px;
+}
+input {
+    font-family: monospace;
+    padding: 3px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-left: 5px;
+    margin-right: 5px;
+    font-size: large;
+}
+input:focus {
+    background-color: #f9f9f9;
+}
+button {
+    padding: 3px 5px 3px 5px;
+    border-radius: 5px;
+    font-size: large;
+}
+
 #body {
     font-size: 14px;
     font-family: sans-serif;
@@ -77,6 +107,93 @@ body {
     background-color: #f4f4f4;
 }
 
+#page-home {
+    padding: 5px;
+    width: 740px !important;
+    height: 470px !important;
+}
+
+.printing label {
+    width: 5em;
+}
+
+#page-home button {
+    margin-bottom: 5px;
+}
+
+#page-home input:nth-child(1n+2) {
+    margin-bottom: 5px;
+}
+
+#state {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#bed_temp,#nozzle_temp {
+    width: 50px;
+}
+
+#keypad {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+    padding: 10px;
+}
+
+#keypad button {
+    width: 50px;
+    height: 50px;
+    margin: 3px;
+}
+
+#file-list-wrap, #file-detail {
+    overflow-y: auto;
+    margin: 10px;
+}
+
+#file-list {
+    font-family: monospace;
+}
+#file-list > div:hover {
+    background-color: #ddd;
+}
+
+#page-ctrl > label {
+    margin: 0;
+    padding: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: white;
+}
+
+#page-ctrl > label:nth-child(1n+3) {
+    border-top: 1px solid #ddd;
+}
+
+#page-ctrl > div {
+    padding: 5px;
+}
+
+#comm-input {
+    background-color: white;
+    padding: 5px 5px 5px 5px;
+    border-bottom: 1px solid #ccc;
+}
+#comm-input > input {
+    padding: 3px 5px 3px 5px;
+}
+#comm-log {
+    padding: 0 5px 5px 5px;
+    font-family: monospace;
+    font-size: smaller;
+    overflow-y: auto;
+    padding: 5px;
+}
+
 #page-vids {
     background: black;
     background-size: contain;
@@ -85,19 +202,25 @@ body {
     background-image: var(--video-url);
 }
 
-div {
-    margin: 0;
-    border: 0;
-    padding: 0;
+.settings:hover {
+    background-color: #eee;
 }
-td {
+#settings table {
+    border-collapse: collapse;
+}
+#settings th,td {
+    text-align: left;
+}
+#actions label {
+    font-weight: bold;
     text-align: center;
 }
-label {
-    margin: 5px;
+#actions button {
+    margin-top: 5px;
+    min-width: 8em;
 }
-input {
-    font-family: monospace;
+#actions > div {
+    margin-right: 5px;
 }
 
 .row {
@@ -176,35 +299,4 @@ input {
 
 *:focus {
     outline: none;
-}
-
-button {
-    padding: 3px 5px 3px 5px;
-    border-radius: 3px;
-}
-input {
-    padding: 3px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    margin-left: 5px;
-    margin-right: 5px;
-}
-input:focus {
-    background-color: #f5f5f5;
-}
-
-#comm-input {
-    background-color: white;
-    padding: 5px 5px 5px 5px;
-    border-bottom: 1px solid #ccc;
-}
-#comm-input > input {
-    padding: 3px 5px 3px 5px;
-}
-#comm-log {
-    padding: 0 5px 5px 5px;
-    font-family: monospace;
-    font-size: smaller;
-    overflow-y: auto;
-    padding: 5px;
 }
