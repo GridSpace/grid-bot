@@ -20,6 +20,7 @@ let timeout = null;
 let queue = [];
 let logs = [];
 let files = {};
+let file_selected = null;
 let ready = false;
 let sock = null;
 let last_jog = null;
@@ -96,14 +97,28 @@ function select(file, ext) {
     if (file) {
         $('file-name').innerText = file.name;
         $('file-date').innerText = moment(new Date(file.time)).format('YY/MM/DD HH:mm:ss');
-        $('file-size').innerText = file.size;
+        $('file-size').innerText = file.size
+            .toString()
+            .split('')
+            .reverse()
+            .map((v,i,a) => {
+                return i < a.length - 1 && i % 3 === 2 ? ',' + v : v;
+            })
+            .reverse()
+            .join('')
+            ;
         if (file.last) {
             $('file-print').innerText = elapsed(file.last.end - file.last.start);
-            $('file-last').style.display = 'inline-block';
+            $('file-last').style.display = '';
         } else {
             $('file-last').style.display = 'none';
         }
-        $('file-go').innerText = (ext === 'g' ? 'build' : 'install');
+        $('file-go').innerText = (ext === 'g' ? 'print' : 'install');
+        if (file_selected) {
+            file_selected.classList.remove("file-selected");
+        }
+        file_selected = $(file.uuid);
+        file_selected.classList.add("file-selected");
         selected = {file: file.name, ext};
     } else {
         selected = null;
@@ -344,9 +359,11 @@ function set_jog(val, el) {
     if (last_jog) {
         last_jog.classList.remove('bg_yellow');
     }
-    el.classList.add('bg_yellow');
-    last_jog = el;
-    settings.jog_sel = el.id;
+    if (el) {
+        el.classList.add('bg_yellow');
+        last_jog = el;
+        settings.jog_sel = el.id;
+    }
     settings.jog_val = val;
 }
 
@@ -515,7 +532,7 @@ function init() {
         }
         interval = setInterval(() => {
             send('*status');
-        }, 500);
+        }, 1000);
         send('*list');
     };
     sock.onclose = (evt) => {
@@ -670,12 +687,15 @@ function init() {
             let list = $('file-list');
             let html = [];
             let trim = msg.trim().substring(spos+4, epos);
+            let time = Date.now();
             files = {};
             JSON.parse(trim).forEach(file => {
+                let uuid = (time++).toString(36);
                 let name = cleanName(file.name);
                 let ext = file.ext.charAt(0);
                 files[name] = file;
-                html.push(`<div class="row"><span>${ext}</span><label class="grow" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')">${name}</label><button onclick="remove('${name}')">x</button></div>`);
+                file.uuid = uuid;
+                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${file.name}</label><button onclick="remove('${name}')">x</button></div>`);
             });
             list.innerHTML = html.join('');
         } else if (msg.indexOf("***") >= 0) {

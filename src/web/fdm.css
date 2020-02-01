@@ -150,6 +150,10 @@ button {
     margin: 3px;
 }
 
+#page-file > div {
+    width: 50%;
+}
+
 #file-list-wrap, #file-detail {
     overflow-y: auto;
     margin: 10px;
@@ -157,9 +161,46 @@ button {
 
 #file-list {
     font-family: monospace;
+    background: #fafafa;
+    border-radius: 5px;
 }
+
+#file-list button {
+    font-size: smaller;
+    margin: 2px 4px 2px 4px;
+    padding: 2px 4px 2px 4px;
+    border-radius: 3px;
+}
+
 #file-list > div:hover {
     background-color: #ddd;
+}
+
+#file-info {
+    border-bottom: 1px solid #ddd;
+}
+
+#file-info > div {
+    display: flex;
+    flex-direction: row;
+}
+
+#file-info label {
+    font-weight: bold;
+    width: 75px;
+}
+
+#file-info span {
+    margin: 5px 5px 5px 10px;
+    font-size: larger;
+}
+
+#file-detail button {
+    margin-top: 5px;
+}
+
+.file-selected {
+    background-color: #e8e8e8;
 }
 
 #page-ctrl > label {

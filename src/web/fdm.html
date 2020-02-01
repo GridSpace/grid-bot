@@ -148,22 +148,24 @@
                     </div>
                 </div>
 
-                <div id="page-file" class="row grow">
+                <div id="page-file" class="row">
                     <div id="file-list-wrap" class="grow">
                         <div id="file-list"></div>
                     </div>
                     <div id="file-detail" class="col">
-                        <div id="file-info">
-                            <div><label>name:</label><span id="file-name">...</span></div>
-                            <div><label>date:</label><span id="file-date">...</span></div>
-                            <div><label>size:</label><span id="file-size">...</span></div>
-                            <div id="file-last"><label>time:</label><span id="file-print">...</span></div>
+                        <div id="file-info" class="col">
+                            <div><label>name</label><span id="file-name"></span></div>
+                            <div><label>date</label><span id="file-date"></span></div>
+                            <div><label>size</label><span id="file-size"></span></div>
+                            <div id="file-last"><label>runtime</label><span id="file-print"></span></div>
                         </div>
                         <div class="grow"></div>
-                        <div id="file-actions" class="row">
-                            <button onclick="print_selected()">print</button>
+                        <div id="file-actions" class="col">
+                            <button id="file-go" onclick="print_selected()">print</button>
                             <button onclick="delete_selected()">delete</button>
-                            <button onclick="clear_files()">delete all</button>
+                            <div class="ten"></div>
+                            <div class="ten"></div>
+                            <button onclick="clear_files()">delete all files</button>
                         </div>
                     </div>
                 </div>
