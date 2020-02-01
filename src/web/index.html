@@ -1,204 +1,260 @@
 <html>
     <head>
-        <title>marlin control</title>
+        <title>printer control</title>
         <script src="moment.js"></script>
         <script src="index.js"></script>
+        <script src="fa.min.js"></script>
         <link rel="stylesheet" type="text/css" href="index.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     </head>
-    <body onload="init()" xclass="col">
-        <div id="body" class="col">
-        <div id="header" class="row align_center">
-            <input id="state" class="grow" cols=20 disabled />
-            <span class="ten"></span>
-            <label>X</label>
-            <input id="xpos" value="" size="6" disabled="true"></input>
-            <label>Y</label>
-            <input id="ypos" value="" size="6" disabled="true"></input>
-            <label>Z</label>
-            <input id="zpos" value="" size="6" disabled="true"></input>
-            <span class="ten"></span>
-            <label>ext</label>
-            <input id="nozzle_temp" size="4" disabled="true"></input>
-            <label>bed</label>
-            <input id="bed_temp" size="4" disabled="true"></input>
-            <span class="ten"></span>
-            <button id="b-ctrl">control</button>
-            <button id="b-cmd">command</button>
-        </div>
-        <div id="t-ctrl" class="tile row grow shrink">
-            <div class="col panel justify_center no-lm">
-                <span class="grow"></span>
-                <div class="label-group col align_center">
-                    <label>eeprom</label>
-                    <div class="col">
-                        <button onclick="eeprom_save()">save</button>
-                        <button onclick="eeprom_restore()">restore</button>
-                    </div>
-                </div>
-                <div class="label-group col align_center">
-                    <label>control</label>
-                    <div class="col">
-                        <button id="update" onclick="update_code()">update</button>
-                        <button onclick="controller_update()">restart</button>
-                    </div>
-                </div>
-                <div id="actions" class="label-group col justify_center align_center">
-                    <label>system</label>
-                    <div class="col">
-                        <button id="reboot" onclick="reboot()">reboot</button>
-                        <button id="shutdown" onclick="shutdown()">shutdown</button>
-                    </div>
-                </div>
-                <span class="grow"></span>
+    <body onload="init()">
+        <div id="body" class="row items-stretch">
+            <div id="menu" class="col items-center">
+                <div id="menu-home"><i class="fas fa-home"></i></div>
+                <div id="menu-move"><i class="fas fa-expand-arrows-alt"></i></div>
+                <div id="menu-file"><i class="fas fa-file-alt"></i></div>
+                <div id="menu-comm"><i class="fas fa-caret-square-right"></i></div>
+                <div id="menu-vids"><i class="fas fa-video"></i></div>
+                <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
             </div>
-            <div class="col grow">
-                <div id="pos" class="row">
-                    <div class="row panel grow align_center">
-                        <div class="col">
-                            <button id="clear_bed" onclick="clear_bed()">clear bed</button>
-                            <button onclick="camera()">camera</button>
-                            <button onclick="disable_motors()">disable motors</button>
-                        </div>
-                    </div>
-                    <div class="row panel">
-                        <div id="jog_set" class="row align_center justify_center">
-                            <div class="col">
-                                <button id="j01" onclick="set_jog(0.01,this)">0.01</button>
-                                <button id="j05" onclick="set_jog(0.10,this)">0.10</button>
-                                <button id="j10" onclick="set_jog(1.00,this)">1.00</button>
+            <div id="pages" class="row grow">
+                <div id="page-home" class="col">
+                    <input id="state"></input>
+
+                    <div class="row">
+                        <div class="col printing">
+                            <div class="row">
+                                <label>File</label>
+                                <input id="filename" disabled="true" class="grow"></input>
                             </div>
-                            <div class="col">
-                                <button id="j20" onclick="set_jog(10.0,this)">10</button>
-                                <button id="j50" onclick="set_jog(50.0,this)">50</button>
-                                <button id="j100" onclick="set_jog(100.0,this)">100</button>
+                            <div class="row">
+                                <label>Elapsed</label>
+                                <input id="elapsed" disabled="true" size="10" class="text-center grow"></input>
                             </div>
-                        </div>
-                    </div>
-                    <div class="row panel">
-                        <table>
-                            <tr>
-                                <td><button onclick="jog('Z',-1)">Z-</button></td>
-                                <td><button onclick="jog('Y',-1)">Y-</button></td>
-                                <td><button onclick="retract()">E-</button></td>
-                            </tr>
-                            <tr>
-                                <td><button onclick="jog('X',-1)">X-</button></td>
-                                <td><button onclick="goto_home()" class="fa fa-home"></button></td>
-                                <td><button onclick="jog('X',1)">X+</button></td>
-                            </tr>
-                            <tr>
-                                <td><button onclick="jog('Z',1)">Z+</button></td>
-                                <td><button onclick="jog('Y',1)">Y+</button></td>
-                                <td><button onclick="extrude()">E+</button></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="row panel grow align_center">
-                        <div class="col">
-                            <button class="no-lm no-rm" onclick="origin_go()">Goto Origin</button>
-                            <button class="no-lm no-rm" onclick="origin_set()">Set Origin</button>
-                            <button class="no-lm no-rm" onclick="origin_clear()">Clear Origin</button>
-                        </div>
-                        <div class="col">
-                            <button class="no-lm no-rm" onclick="center_go()">Goto Center</button>
-                            <button class="no-lm no-rm" onclick="clear_files()">Clear Files</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="files" class="panel">
-                    <label>files</label>
-                </div>
-                <div id="file-wrap" class="row panel label-group grow">
-                    <div id="file-list-wrap">
-                        <div id="file-list" class="over-y"></div>
-                    </div>
-                    <div id="file-detail" class="col">
-                        <div id="file-info">
-                            <div><label>name:</label><span id="file-name">...</span></div>
-                            <div><label>date:</label><span id="file-date">...</span></div>
-                            <div><label>size:</label><span id="file-size">...</span></div>
-                            <div id="file-last"><label>time:</label><span id="file-print">...</span></div>
+                            <div class="row">
+                                <label>Progress</label>
+                                <div id="progress-box" class="col grow">
+                                    <input id="progress" disabled="true" size="6" class="text-center grow"></input>
+                                    <div id="progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <button id="pause" class="grow" onclick="pause()">Pause</button>
+                                <button id="resume" class="grow" onclick="resume()">Resume</button>
+                                <button id="abort" class="grow" onclick="abort()">Abort</button>
+                            </div>
                         </div>
                         <div class="grow"></div>
-                        <div id="file-actions" class="row">
-                            <button id="file-go" onclick="print_selected()">build</button>
-                            <button id="file-del" onclick="delete_selected()">delete</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="col panel no-rm">
-                    <div class="col label-group">
-                        <label>set bed</label>
-                        <div class="row align_center justify_center">
-                            <input id="bed" value="" size="5" class="editable grow"></input>
-                            <button class="up" id="bed_toggle" onclick="bed_toggle()">on</button>
-                        </div>
-                    </div>
-                    <div class="col label-group rel">
-                        <label>set extruder</label>
-                        <div class="row align_center justify_center">
-                            <input id="nozzle" value="" size="5" class="editable grow"></input>
-                            <button class="up" id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
-                        </div>
-                        <div id="keypad" class="col panel">
+                        <div class="col heating">
                             <div class="row">
-                                <button id="kp-1">1</button>
-                                <button id="kp-2">2</button>
-                                <button id="kp-3">3</button><br>
+                                <label class="grow">Bed</label>
+                                <input id="bed_temp" value="" size="5" class="editable"></input>
+                                <button id="bed_toggle" onclick="bed_toggle()">on</button>
                             </div>
                             <div class="row">
-                                <button id="kp-4">4</button>
-                                <button id="kp-5">5</button>
-                                <button id="kp-6">6</button><br>
-                            </div>
-                            <div class="row">
-                                <button id="kp-7">7</button>
-                                <button id="kp-8">8</button>
-                                <button id="kp-9">9</button><br>
-                            </div>
-                            <div class="row">
-                                <button id="kp-ok">ok</button>
-                                <button id="kp-0">0</button>
-                                <button id="kp-bs">&larr;</button>
+                                <label class="grow">Nozzle</label>
+                                <input id="nozzle_temp" value="" size="5" class="editable"></input>
+                                <button id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
                             </div>
                         </div>
                     </div>
+
+
+                    <div id="keypad" class="col">
+                        <div class="row">
+                            <button id="kp-1">1</button>
+                            <button id="kp-2">2</button>
+                            <button id="kp-3">3</button><br>
+                        </div>
+                        <div class="row">
+                            <button id="kp-4">4</button>
+                            <button id="kp-5">5</button>
+                            <button id="kp-6">6</button><br>
+                        </div>
+                        <div class="row">
+                            <button id="kp-7">7</button>
+                            <button id="kp-8">8</button>
+                            <button id="kp-9">9</button><br>
+                        </div>
+                        <div class="row">
+                            <button id="kp-ok">ok</button>
+                            <button id="kp-0">0</button>
+                            <button id="kp-bs">&larr;</button>
+                        </div>
+                    </div>
+
+                    <div class="grow"></div>
+
+                    <div class="row">
+                        <button id="clear_bed" onclick="send('*clear;*status')" class="grow"><pre>clear bed</pre></button>
+                        <div class="five"></div>
+                        <button onclick="send('M410')" class="grow"><pre>emergency stop</pre></button>
+                    </div>
                 </div>
-                <div class="col panel label-group grow no-rm">
-                    <label>update status</label>
-                    <button onclick="update_endstops()">endstop</button>
-                    <button onclick="update_position()">position</button>
-                    <button onclick="update_temps()">temps</button>
-                    <label>calibrations</label>
-                    <button onclick="calibrate_pid()">nozzle pid</button>
+
+                <div id="page-move" class="col">
+                    <div class="grow"></div>
+                    <div class="row jog">
+                        <div class="grow"></div>
+                        <div class="col xyz">
+                            <div class="row">
+                                <label>X</label>
+                                <input id="xpos" value="" size="7" disabled="true"></input>
+                            </div>
+                            <div class="row">
+                                <label>Y</label>
+                                <input id="ypos" value="" size="7" disabled="true"></input>
+                            </div>
+                            <div class="row">
+                                <label>Z</label>
+                                <input id="zpos" value="" size="7" disabled="true"></input>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <button onclick="origin_set()">Set Origin</button>
+                            <button onclick="origin_clear()">Clear Origin</button>
+                            <button onclick="send_safe('G0X0Y0;G0Z0')">Goto Origin</button>
+                        </div>
+                        <div class="col">
+                            <button onclick="center_go()">Goto Center</button>
+                            <button onclick="send_safe('M17')">Enable motors</button>
+                            <button onclick="send_safe('M18')">Disable motors</button>
+                        </div>
+                        <div class="grow"></div>
+                    </div>
+                    <div class="grow"></div>
+                    <div class="row">
+                        <div class="grow"></div>
+                        <div class="col jog">
+                            <label class="text-center">Increment</label>
+                            <div class="row">
+                                <div id="jog_set" class="col grow">
+                                    <button id="j001" onclick="set_jog(0.01,this)">0.01</button>
+                                    <button id="j010" onclick="set_jog(0.10,this)">0.10</button>
+                                    <button id="j100" onclick="set_jog(1.00,this)">1.00</button>
+                                </div>
+                                <div id="jog_set" class="col grow">
+                                    <button id="j1000" onclick="set_jog(10.0,this)">10</button>
+                                    <button id="j5000" onclick="set_jog(50.0,this)">50</button>
+                                    <button id="j10000" onclick="set_jog(100.0,this)">100</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grow"></div>
+                        <div class="col">
+                            <label class="text-center">Jog</label>
+                            <table>
+                                <tr>
+                                    <td><button onclick="jog('Z',-1)">Z-</button></td>
+                                    <td><button onclick="jog('Y',-1)">Y-</button></td>
+                                    <td><button onclick="retract()">E-</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('X',-1)">X-</button></td>
+                                    <td><button onclick="send_safe('G28;M18')" class="fa fa-home"></button></td>
+                                    <td><button onclick="jog('X',1)">X+</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('Z',1)">Z+</button></td>
+                                    <td><button onclick="jog('Y',1)">Y+</button></td>
+                                    <td><button onclick="extrude()">E+</button></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="grow"></div>
+                        <div class="col jog">
+                            <label class="text-center">Speed</label>
+                            <div class="row">
+                                <div id="jog_speed" class="col grow">
+                                    <button id="js0100" onclick="set_jog_speed(100,this)">100</button>
+                                    <button id="js0500" onclick="set_jog_speed(500,this)">500</button>
+                                    <button id="js1000" onclick="set_jog_speed(1000,this)">1000</button>
+                                    <button id="js2000" onclick="set_jog_speed(2000,this)">2000</button>
+                                </div>
+                                <div id="jog_speed" class="col grow">
+                                    <button id="js3000" onclick="set_jog_speed(3000,this)">3000</button>
+                                    <button id="js4000" onclick="set_jog_speed(4000,this)">4000</button>
+                                    <button id="js5000" onclick="set_jog_speed(5000,this)">5000</button>
+                                    <button id="js6000" onclick="set_jog_speed(6000,this)">6000</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grow"></div>
+                    </div>
+                    <div class="grow"></div>
+                </div>
+
+                <div id="page-file" class="row">
+                    <div id="file-list-wrap" class="grow">
+                        <div id="file-list"></div>
+                    </div>
+                    <div id="file-detail" class="col">
+                        <div id="file-info" class="col">
+                            <div><label>name</label><span id="file-name"></span></div>
+                            <div><label>date</label><span id="file-date"></span></div>
+                            <div><label>size</label><span id="file-size"></span></div>
+                            <div id="file-last"><label>runtime</label><span id="file-print"></span></div>
+                        </div>
+                        <div class="grow"></div>
+                        <div id="file-actions" class="col">
+                            <button id="file-go" onclick="print_selected()">print</button>
+                            <button onclick="delete_selected()">delete</button>
+                            <div class="ten"></div>
+                            <div class="ten"></div>
+                            <button onclick="clear_files()">delete all files</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-comm" class="col">
+                    <div id="comm-input" class="row">
+                        <button id="send">send</button>
+                        <input id="command" class="grow"></input>
+                        <button id="clear">clear</button>
+                    </div>
+                    <div id="comm-log"></div>
+                </div>
+
+                <div id="page-vids" class="col"></div>
+
+                <div id="page-ctrl" class="col">
+                    <label>Settings</label>
+                    <div id="settings" class="col"></div>
+                    <div class="grow"></div>
+                    <label>Actions</label>
+                    <div id="actions" class="row">
+                        <div class="grow"></div>
+                        <div class="col">
+                            <label>EEPROM</label>
+                            <button onclick="eeprom_save()">save</button>
+                            <button onclick="eeprom_restore()">restore</button>
+                        </div>
+                        <div class="col">
+                            <label>Update</label>
+                            <button onclick="send_safe('M119')">endstops</button>
+                            <button onclick="send_safe('M114')">position</button>
+                            <button onclick="send_safe('M105')">temps</button>
+                        </div>
+                        <div class="col">
+                            <label>Run</label>
+                            <button onclick="send_safe('M106 255')">fan on</button>
+                            <button onclick="send_safe('M107')">fan off</button>
+                            <button onclick="calibrate_pid()">nozzle pid</button>
+                        </div>
+                        <div class="col">
+                            <label>Controller</label>
+                            <button onclick="update_code()">update</button>
+                            <button onclick="update_code()">restart</button>
+                        </div>
+                        <div class="col">
+                            <label>System</label>
+                            <button onclick="restart()">restart</button>
+                            <button onclick="shutdown()">shutdown</button>
+                        </div>
+                        <div class="grow"></div>
+                    </div>
+                    <div class="grow"></div>
                 </div>
             </div>
-        </div>
-        <div id="t-cmd" class="tile col grow shrink">
-            <div id="sender" class="row panel no-lm no-rm">
-                <button id="send">send</button>
-                <div class="five"></div>
-                <input id="command" size="10" class="editable"></input>
-                <div class="five"></div>
-                <button id="clear">clear</button>
-            </div>
-            <div id="log" class="panel shrink grow no-lm no-rm"></div>
-        </div>
-        <div id="footer" class="row align_center">
-            <label>file</label>
-            <input id="filename" disabled="true" class="grow"></input>
-            <label>progress</label>
-            <input id="progress" disabled="true" size="6" class="text-center"></input>
-            <label>elapsed</label>
-            <input id="elapsed" disabled="true" size="10" class="text-center"></input>
-            <span class="ten"></span>
-            <button id="pause" onclick="pause()">||</button>
-            <button id="resume" onclick="resume()">&gt;</button>
-            <button id="abort" onclick="abort()">abort</button>
-        </div>
         </div>
     </body>
 </html>

@@ -1,29 +1,18 @@
+:root {
+    --video-url: url("data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=");
+}
+
 div,span {
     x-box-sizing: border-box;
 }
 body {
+    top: 0;
     left: 0;
     right: 0;
+    bottom: 0;
     margin: 0;
     border: 0;
     padding: 0;
-    position: fixed;
-}
-#body {
-    font-size: 14px;
-    font-family: sans-serif;
-    align-items: center;
-    justify-content: flex-start;
-    border-bottom: 1px dashed #ddd;
-    left: 0;
-    right: 0;
-    margin: 0;
-    padding: 0;
-    height: 480px;
-    min-height: 480px;
-    max-height: 480px;
-    white-space: nowrap;
-    overflow: hidden;
     position: fixed;
 }
 div {
@@ -35,21 +24,307 @@ td {
     text-align: center;
 }
 label {
+    font-size: large;
     margin: 5px;
 }
 input {
     font-family: monospace;
+    padding: 3px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-left: 5px;
+    margin-right: 5px;
+    font-size: large;
+}
+input:focus {
+    background-color: #f9f9f9;
+}
+button {
+    padding: 5px 8px 5px 8px;
+    border-radius: 5px;
+    font-size: large;
+}
+
+#body {
+    font-size: 14px;
+    font-family: sans-serif;
+    align-items: center;
+    justify-content: flex-start;
+    border-left: 1px solid white;
+    border-right: 1px dashed #ddd;
+    border-bottom: 1px dashed #ddd;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    padding: 0;
+    width: 800px;
+    min-width: 800px;
+    max-width: 800px;
+    height: 480px;
+    min-height: 480px;
+    max-height: 480px;
+    white-space: nowrap;
+    overflow: hidden;
+    position: fixed;
+}
+
+#menu {
+    width: 50px;
+    font-size: 30px !important;
+}
+#menu > div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-content: stretch;
+    flex-grow: 1;
+    width: 48px;
+    border-bottom: 1px solid white;
+    border-right: 1px solid black;
+    border-left: 1px solid white;
+    border-top: 1px solid white;
+}
+#menu > div:hover {
+    background-color: #eee;
+}
+#menu > div > svg {
+    margin-left: auto;
+    margin-right: auto;
+}
+.menu_sel {
+    border-bottom: 1px solid black !important;
+    border-right: 1px solid #f4f4f4 !important;
+    border-left: 1px solid black !important;
+    border-top: 1px solid black !important;
+    background-color: #f4f4f4;
+}
+
+#pages > div {
+    display: none;
+    width: 750px;
+    height: 480px;
+    background-color: #f4f4f4;
+}
+
+#page-home, #page-ctrl, #page-move {
+    padding: 5px;
+    width: 740px !important;
+    height: 470px !important;
+}
+
+#progress-box {
+    position: relative;
+}
+
+#progress-bar {
+    margin: 6px;
+    border-radius: 2px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(255,0,0,0.5);
+}
+
+.printing label {
+    width: 5em;
+}
+
+.printing input {
+    margin: 5px;
+}
+
+.printing button {
+    margin: 5px;
+}
+
+.heating button {
+    width: 50px;
+}
+
+#page-home button {
+    margin-bottom: 5px;
+}
+
+#page-home input:nth-child(1n+2) {
+    margin-bottom: 5px;
+}
+
+#state {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#bed_temp,#nozzle_temp {
+    width: 50px;
+}
+
+#keypad {
+    position: absolute;
+    right: 5px;
+    bottom: 80px;
+    z-index: 100000;
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+    padding: 10px;
+}
+
+#keypad button {
+    width: 50px;
+    height: 50px;
+    margin: 3px;
+}
+
+#page-move td button {
+    min-width: 50px !important;
+    min-height: 50px !important;
+}
+#page-move td {
+    text-align: center;
+}
+
+.xyz > div {
+    margin: 4px;
+}
+
+.xyz input {
+    text-align: right;
+}
+
+.jog button {
+    margin: 3px;
+}
+
+#page-file > div {
+    width: 50%;
+}
+
+#file-list-wrap, #file-detail {
+    overflow-y: auto;
+    margin: 10px;
+}
+
+#file-list {
+    font-family: monospace;
+    background: #fafafa;
+    border-radius: 5px;
+}
+
+#file-list button {
+    font-size: smaller;
+    margin: 2px 4px 2px 4px;
+    padding: 2px 4px 2px 4px;
+    border-radius: 3px;
+}
+
+#file-list > div:hover {
+    background-color: #ddd;
+}
+
+#file-info {
+    border-bottom: 1px solid #ddd;
+}
+
+#file-info > div {
+    display: flex;
+    flex-direction: row;
+}
+
+#file-info label {
+    font-weight: bold;
+    width: 75px;
+}
+
+#file-info span {
+    margin: 5px 5px 5px 10px;
+    font-size: larger;
+}
+
+#file-detail button {
+    margin-top: 5px;
+}
+
+.file-selected {
+    background-color: #e8e8e8;
+}
+
+#comm-input {
+    background-color: white;
+    padding: 5px 5px 5px 5px;
+    border-bottom: 1px solid #ccc;
+}
+#comm-input > input {
+    padding: 3px 5px 3px 5px;
+}
+#comm-log {
+    padding: 0 5px 5px 5px;
+    font-family: monospace;
+    font-size: smaller;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+#page-vids {
+    background: black;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: var(--video-url);
+}
+
+#page-ctrl > label {
+    margin: 0;
+    padding: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: white;
+}
+
+#page-ctrl > label:nth-child(1n+3) {
+    border-top: 1px solid #ddd;
+}
+
+#page-ctrl > div {
+    padding: 5px;
+}
+
+#page-ctrl button {
+    font-size: medium !important;
+}
+
+.settings:hover {
+    background-color: #eee;
+}
+#settings table {
+    border-collapse: collapse;
+}
+#settings th,td {
+    text-align: left;
+}
+#actions label {
+    font-weight: bold;
+    text-align: center;
+}
+#actions button {
+    margin-top: 5px;
+    min-width: 8em;
+}
+#actions > div {
+    margin-right: 5px;
 }
 
 .row {
     display: flex;
     flex-direction: row;
-    flex-shrink: 0;
 }
 .col {
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
+}
+.fix {
+    position: fixed;
 }
 .rel {
     position: relative;
@@ -66,17 +341,23 @@ input {
 .grow {
     flex-grow: 1;
 }
-.space-a {
+.space-around {
     justify-content: space-around;
 }
-.space-b {
+.space-between {
     justify-content: space-between;
 }
-.align_stretch {
-    align-items: stretch;
+.items-stretch {
+    align-items: stretch !important;
 }
-.align_center {
+.items-center {
     align-items: center;
+}
+.content-stretch {
+    align-content: stretch;
+}
+.content-center {
+    align-content: center;
 }
 .text-center {
     text-align: center;
@@ -107,227 +388,7 @@ input {
 .bg_yellow {
     background-color: #ffd !important;
 }
-.tile {
-    width: 800px;
-    justify-content: space-between;
-    align-items: stretch;
-    padding: 0;
-}
-.panel {
-    margin: 2px;
-    padding: 2px;
-    border-radius: 3px;
-    border: 1px solid #888;
-    justify-content: space-around;
-}
-.panel input {
-    padding: 8px 5px 8px 5px;
-    background-color: #fafafa;
-    border-radius: 3px;
-    border: 1px solid #ddd;
-    outline: none;
-}
-.row-button {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-}
-.panel button {
-    margin: 5px;
-    padding: 8px;
-    background-color: #eee;
-    border-radius: 5px;
-    outline: none;
-}
-.label-group {
-    display: flex;
-    align-items: stretch;
-    text-align: center;
-}
-.label-group > label {
-    font-size: 10px;
-    border-top: 1px solid #888;
-    border-bottom: 1px solid #888;
-    background-color: #def;
-    padding: 3px 2px 3px 2px;
-}
-.label-group input {
-    text-align: center;
-}
 
-#header input {
-    text-align: center;
-}
-#header input, #footer input, #file-info input {
-    background-color: white;
-    margin: 0;
-    padding: 3px 2px 3px 2px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-weight: bold;
-    font-size: 14px;
-    text-align: center;
-}
-#header button, #footer button, #sender button {
-    background-color: #f5f5f5;
-    border-radius: 5px;
+*:focus {
     outline: none;
-    margin: 2px 3px 2px 3px;
-    padding: 4px 6px 4px 6px;
-}
-#header label, #footer label {
-    background-color: #def;
-    padding: 3px 4px 3px 4px;
-    border-radius: 3px;
-}
-#b-cmd, #b-ctrl, #abort {
-    width: 8em;
-}
-#b-ctrl {
-    display: none;
-}
-#t-cmd {
-    display: none;
-    min-height: 1px;
-}
-#header {
-    width: 790px;
-    margin: 0 0 2px 0;
-    padding: 1px 5px 1px 5px;
-    background-color: #def;
-}
-#footer {
-    width: 790px;
-    margin: 2px 0 0 0;
-    padding: 1px 5px 1px 5px;
-    background-color: #def;
-}
-#origin {
-    padding-right: 5px;
-    justify-content: center;
-}
-#pos table {
-    padding-right: 4px;
-    padding-left: 4px;
-}
-#jog_set {
-    font-family: monospace;
-    font-size: 12px;
-}
-#jog_set div {
-    padding: 0;
-}
-#sender {
-    padding: 6px;
-}
-#sender input {
-    padding: 5px;
-    width: 100%;
-}
-#files {
-    text-align: center;
-    background-color: #def;
-}
-#file-wrap {
-    justify-content: flex-start;
-}
-#file-list-wrap {
-    position: relative;
-    display: block;
-    width: 50%;
-}
-#file-list {
-    position: absolute;
-    overflow-x: hidden;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 0;
-    margin: 0;
-    padding: 0;
-}
-#file-list div {
-    border: 3px solid white;
-    align-items: stretch;
-}
-#file-list div:hover {
-    border: 3px solid #fee;
-    background-color: #fee;
-}
-#file-list label {
-    padding-top: 2px;
-    text-align: left;
-    user-select: none;
-    flex-grow: 1;
-    font-size: 18px;
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-#file-list button {
-    margin: 2px;
-    padding: 2px 4px 2px 4px;
-    border-radius: 2px;
-}
-#file-list span {
-    border: 1px solid #888;
-    border-radius: 2px;
-    margin: 3px 8px 3px 3px;
-    padding: 1px 3px 3px 3px;
-    background-color: #eee;
-}
-#file-detail {
-    font-size: 18px;
-    padding: 3px;
-    border-left: 1px dashed #888;
-    text-align: left;
-    width: 50%;
-    overflow-x: hidden;
-}
-#file-last {
-    display: none;
-}
-#file-info label {
-    display: inline-block;
-    min-width: 60px;
-}
-#file-info > div {
-    padding: 3px 0 3px 0;
-}
-#file-actions > button {
-    width: 50%;
-}
-#filename {
-    flex-grow: 1;
-}
-#keypad {
-    justify-content: flex-start;
-    flex-grow: 0;
-    top: 104%;
-    right: -5px;
-    position: absolute;
-    background: rgba(255,255,255,0.90);
-    border: 4px solid rgba(0,0,0,0.25);
-    border-radius: 5px;
-}
-#keypad button {
-    width: 20px;
-    height: 20px;
-    padding: 20px;
-    margin: 5px;
-}
-#keypad > div {
-    justify-content: center;
-}
-#bed, #nozzle {
-    margin-left: 5px;
-}
-#bed_toggle, #nozzle_toggle {
-    width: 3em;
-}
-#log {
-    font-family: monospace;
-    font-size: smaller;
-    overflow-y: auto;
-    padding: 5px;
 }

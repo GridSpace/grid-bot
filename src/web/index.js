@@ -1,14 +1,34 @@
+const MCODE = {
+    M92:  "steps per",
+    M201: "accel max",
+    M203: "feedrate max",
+    M204: "accel",
+    M205: "advanced",
+    M206: "home offset",
+    M301: "pid tuning",
+    M420: "UBL",
+    M851: "z probe offset",
+    M900: "linear advance",
+    M906: "stepper current",
+    M913: "hybrid threshold",
+    M914: "stallguard threshold"
+};
+
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
 let timeout = null;
 let queue = [];
 let logs = [];
 let files = {};
+let file_selected = null;
 let ready = false;
 let sock = null;
 let last_jog = null;
+let last_jog_speed = null;
 let last_set = {};      // last settings object
+let last_hash = '';     // last settings hash
 let jog_val = 0.0;
+let jog_speed = 1000;
 let input = null;       // active input for keypad
 let settings = localStorage;
 let selected = null;
@@ -40,10 +60,6 @@ function alert_on_run() {
 
 function reload() {
     document.location = document.location;
-}
-
-function camera() {
-    window.location = '/camera.html';
 }
 
 function update_code() {
@@ -81,14 +97,28 @@ function select(file, ext) {
     if (file) {
         $('file-name').innerText = file.name;
         $('file-date').innerText = moment(new Date(file.time)).format('YY/MM/DD HH:mm:ss');
-        $('file-size').innerText = file.size;
+        $('file-size').innerText = file.size
+            .toString()
+            .split('')
+            .reverse()
+            .map((v,i,a) => {
+                return i < a.length - 1 && i % 3 === 2 ? ',' + v : v;
+            })
+            .reverse()
+            .join('')
+            ;
         if (file.last) {
             $('file-print').innerText = elapsed(file.last.end - file.last.start);
-            $('file-last').style.display = 'inline-block';
+            $('file-last').style.display = '';
         } else {
             $('file-last').style.display = 'none';
         }
-        $('file-go').innerText = (ext === 'g' ? 'build' : 'install');
+        $('file-go').innerText = (ext === 'g' ? 'print' : 'install');
+        if (file_selected) {
+            file_selected.classList.remove("file-selected");
+        }
+        file_selected = $(file.uuid);
+        file_selected.classList.add("file-selected");
         selected = {file: file.name, ext};
     } else {
         selected = null;
@@ -135,12 +165,6 @@ function center_go() {
     send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F7000`);
 }
 
-function origin_go() {
-    if (alert_on_run()) return;
-    send('G0 X0 Y0');
-    send('G0 Z0');
-}
-
 function origin_set() {
     if (alert_on_run()) return;
     if (last_set && last_set.pos) {
@@ -156,29 +180,12 @@ function origin_clear() {
     send('M500');
 }
 
-function fan_on() {
-    if (alert_on_run()) return;
-    send('M106 255');
-}
-
-function fan_off() {
-    if (alert_on_run()) return;
-    send('M107');
-}
-
 function calibrate_pid() {
     if (alert_on_run()) return;
     if (confirm('run hot end PID calibration?')) {
         send('M303 S220 C8 U1');
+        menu_select('comm');
     }
-}
-
-function update_endstops() {
-    send('M119');
-}
-
-function update_temps() {
-    send('M105');
 }
 
 function update_position() {
@@ -197,6 +204,7 @@ function eeprom_restore() {
     if (confirm('restore eeprom settings')) {
         send('M501');
         send('M503');
+        settings_done = false;
     }
 }
 
@@ -214,7 +222,7 @@ function bed_toggle() {
 }
 
 function bed_temp() {
-    return parseInt($('bed').value || '0');
+    return parseInt($('bed_temp').value || '0');
 }
 
 function nozzle_toggle() {
@@ -231,7 +239,7 @@ function nozzle_toggle() {
 }
 
 function nozzle_temp() {
-    return parseInt($('nozzle').value || '0');
+    return parseInt($('nozzle_temp').value || '0');
 }
 
 function filament_load() {
@@ -242,28 +250,6 @@ function filament_load() {
 function filament_unload() {
     if (alert_on_run()) return;
     send('G0 E-700 F300');
-}
-
-function goto_home() {
-    if (alert_on_run()) return;
-    send('G28');
-    send('M18');
-}
-
-function disable_motors() {
-    if (alert_on_run()) return;
-    send('M18');
-}
-
-function stop_motors() {
-    if (alert_on_run()) return;
-    send('M410');
-}
-
-function clear_bed() {
-    if (alert_on_run()) return;
-    send('*clear');
-    send('*status');
 }
 
 function print_next() {
@@ -327,15 +313,28 @@ function set_jog(val, el) {
     if (last_jog) {
         last_jog.classList.remove('bg_yellow');
     }
-    el.classList.add('bg_yellow');
-    last_jog = el;
-    settings.jog_el = el.id;
+    if (el) {
+        el.classList.add('bg_yellow');
+        last_jog = el;
+        settings.jog_sel = el.id;
+    }
     settings.jog_val = val;
+}
+
+function set_jog_speed(val, el) {
+    jog_speed = val;
+    if (last_jog_speed) {
+        last_jog_speed.classList.remove('bg_yellow');
+    }
+    el.classList.add('bg_yellow');
+    last_jog_speed = el;
+    settings.jog_speed_sel = el.id;
+    settings.jog_speed = val;
 }
 
 function jog(axis, dir) {
     if (alert_on_run()) return;
-    gr(`${axis}${dir * jog_val} F1000`);
+    gr(`${axis}${dir * jog_val} F${jog_speed}`);
 }
 
 function gr(msg) {
@@ -344,10 +343,21 @@ function gr(msg) {
     send('G90');
 }
 
+function send_confirm(message, what) {
+    if (confirm(`send "${what || message}?"`)) {
+        send(message);
+    }
+}
+
+function send_safe(message) {
+    if (alert_on_run()) return;
+    send(message);
+}
+
 function send(message) {
     if (ready) {
         // log({send: message});
-        sock.send(message);
+        message.split(";").map(v => v.trim()).forEach(m => sock.send(m));
     } else {
         // log({queue: message});
         queue.push(message);
@@ -409,22 +419,66 @@ function init_filedrop() {
     });
 }
 
-function showControl() {
-    $('t-ctrl').style.display = 'flex';
-    $('t-cmd').style.display = 'none';
-    $('b-ctrl').style.display = 'none';
-    $('b-cmd').style.display = 'block';
+function vids_update() {
+    let time = Date.now();
+    let img = new Image();
+    let url = `http://${location.hostname}/camera.jpg?time=${time}`;
+    img.onload = () => {
+        document.documentElement.style.setProperty('--video-url', `url(${url})`);
+        vids_timer = setTimeout(vids_update, 1000);
+    };
+    img.src = url;
 }
 
-function showCommand() {
-    $('t-ctrl').style.display = 'none';
-    $('t-cmd').style.display = 'flex';
-    $('b-ctrl').style.display = 'block';
-    $('b-cmd').style.display = 'none';
-    $('command').focus();
+let menu;
+let menu_selected;
+let page_selected;
+let vids_timer;
+
+function menu_select(key) {
+    let menu = $(`menu-${key}`);
+    if (menu_selected) {
+        menu_selected.classList.remove("menu_sel");
+    }
+    menu.classList.add("menu_sel")
+    menu_selected = menu;
+
+    let page = $(`page-${key}`);
+    if (page_selected) {
+        page_selected.style.display = 'none';
+    }
+    page.style.display = 'flex';
+    page_selected = page;
+    settings.page = key;
+
+    clearTimeout(vids_timer)
+
+    if (key === 'vids') {
+        vids_update();
+    }
+    if (key === 'comm') {
+        $('command').focus();
+    }
 }
 
 function init() {
+    // bind left menu items and select default
+    menu = {
+        home: $('menu-home'),
+        move: $('menu-move'),
+        file: $('menu-file'),
+        comm: $('menu-comm'),
+        vids: $('menu-vids'),
+        ctrl: $('menu-ctrl')
+    };
+    for (name in menu) {
+        let key = name.split('-')[0];
+        menu[name].onclick = () => {
+            menu_select(key);
+        };
+    }
+    menu_select(settings.page || 'home');
+
     timeout = null;
     sock = new WebSocket(`ws://${document.location.hostname}:4080`);
     sock.onopen = (evt) => {
@@ -438,7 +492,7 @@ function init() {
         }
         interval = setInterval(() => {
             send('*status');
-        }, 500);
+        }, 1000);
         send('*list');
     };
     sock.onclose = (evt) => {
@@ -478,6 +532,7 @@ function init() {
             if (status.print) {
                 $('filename').value = cleanName(status.print.filename);
                 $('progress').value = status.print.progress + '%';
+                $('progress-bar').style.width = $('progress').value;
                 if (status.print.clear) {
                     $('clear_bed').classList.remove('bg_red');
                 } else {
@@ -502,34 +557,32 @@ function init() {
             }
             if (status.target) {
                 if (status.target.bed > 0) {
-                    if ($('bed') !== input) {
-                        $('bed').value = status.target.bed;
+                    if ($('bed_temp') !== input) {
+                        $('bed_temp').value = status.target.bed;
                         // $('bed').classList.add('bg_red');
                     }
                     $('bed_temp').classList.add('bg_red');
                     $('bed_toggle').innerText = 'off';
                 } else {
-                    if ($('bed') !== input) {
-                        $('bed').value = 0;
+                    if ($('bed_temp') !== input) {
+                        $('bed_temp').value = 0;
                     }
                     $('bed_temp').classList.remove('bg_red');
                     $('bed_toggle').innerText = 'on';
                 }
-                $('bed_temp').value = parseInt(status.temp.bed || 0);
                 if (status.target.ext[0] > 0) {
-                    if ($('nozzle') !== input) {
-                        $('nozzle').value = status.target.ext[0];
+                    if ($('nozzle_temp') !== input) {
+                        $('nozzle_temp').value = status.target.ext[0];
                     }
                     $('nozzle_temp').classList.add('bg_red');
                     $('nozzle_toggle').innerText = 'off';
                 } else {
-                    if ($('nozzle') !== input) {
-                        $('nozzle').value = 0;
+                    if ($('nozzle_temp') !== input) {
+                        $('nozzle_temp').value = 0;
                     }
                     $('nozzle_temp').classList.remove('bg_red');
                     $('nozzle_toggle').innerText = 'on';
                 }
-                $('nozzle_temp').value = parseInt(status.temp.ext[0] || 0);
             }
             if (status.pos) {
                 $('xpos').value = parseFloat(status.pos.X).toFixed(2);
@@ -559,33 +612,68 @@ function init() {
                 if (min.y === ' TRIGGERED') $('ypos').classList.add('bg_yellow');
                 if (min.z === ' TRIGGERED') $('zpos').classList.add('bg_yellow');
             }
+            if (status.settings) {
+                let valuehash = '';
+                let html = ['<table>'];
+                let bind = [];
+                for (let key in status.settings) {
+                    let map = status.settings[key];
+                    html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
+                    for (let k in map) {
+                        let bk = `ep-${key}-${k}`;
+                        let bv = [key, k];
+                        html.push(`<th>${k}</th>`);
+                        html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
+                        valuehash += [k,map[k]].join('');
+                        bind.push({bk,bv});
+                    }
+                    html.push('</tr>');
+                }
+                html.push('</table>');
+                if (valuehash !== last_hash) {
+                    $('settings').innerHTML = html.join('');
+                    bind.forEach(el => {
+                        let {bk, bv} = el;
+                        let input = $(bk);
+                        input.onkeyup = (ev) => {
+                            if (ev.keyCode === 13) {
+                                send_safe(`${bv[0]} ${bv[1]}${input.value.trim()}`);
+                            }
+                        };
+                    });
+                }
+                last_hash = valuehash;
+            }
         } else if (msg.indexOf("*** [") >= 0) {
             let list = $('file-list');
             let html = [];
             let trim = msg.trim().substring(spos+4, epos);
+            let time = Date.now();
             files = {};
             JSON.parse(trim).forEach(file => {
+                let uuid = (time++).toString(36);
                 let name = cleanName(file.name);
                 let ext = file.ext.charAt(0);
                 files[name] = file;
-                html.push(`<div class="row"><span>${ext}</span><label onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')">${name}</label><button onclick="remove('${name}')">x</button></div>`);
+                file.uuid = uuid;
+                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${file.name}</label><button onclick="remove('${name}')">x</button></div>`);
             });
             list.innerHTML = html.join('');
         } else if (msg.indexOf("***") >= 0) {
             try {
                 log({wss_msg: msg});
-                showCommand();
-                $('log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-                $('log').scrollTop = $('log').scrollHeight;
+                menu_select('comm');
+                $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+                $('comm-log').scrollTop = $('comm-log').scrollHeight;
             } catch (e) {
                 log({wss_msg: evt, err: e});
             }
         } else {
-            $('log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-            $('log').scrollTop = $('log').scrollHeight;
+            $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+            $('comm-log').scrollTop = $('comm-log').scrollHeight;
         }
     };
-    let setbed = $('bed').onkeyup = ev => {
+    let setbed = $('bed_temp').onkeyup = ev => {
         if (ev === 42 || ev.keyCode === 13) {
             send('M140 S' + bed_temp());
             send('M105');
@@ -593,7 +681,7 @@ function init() {
             input_deselect();
         }
     };
-    let setnozzle = $('nozzle').onkeyup = ev => {
+    let setnozzle = $('nozzle_temp').onkeyup = ev => {
         if (ev === 42 || ev.keyCode === 13) {
             send('M104 S' + nozzle_temp());
             send('M105');
@@ -613,7 +701,7 @@ function init() {
         }
     };
     $('clear').onclick = () => {
-        $('log').innerHTML = '';
+        $('comm-log').innerHTML = '';
         $('command').focus();
     };
     let input_deselect = document.body.onclick = (ev) => {
@@ -623,40 +711,40 @@ function init() {
         }
         $('keypad').style.display = 'none';
     };
-    $('nozzle').onclick = (ev) => {
+    $('nozzle_temp').onclick = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
-            $('nozzle').setSelectionRange(10, 10);
+            $('nozzle_temp').setSelectionRange(10, 10);
         }
-        input = $('nozzle');
+        input = $('nozzle_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
             input.value = settings.default_nozzle || '220';
         }
         ev.stopPropagation();
     };
-    $('nozzle').ondblclick = (ev) => {
-        let sel = $('nozzle');
+    $('nozzle_temp').ondblclick = (ev) => {
+        let sel = $('nozzle_temp');
         if (sel.value !== '0' && confirm('set default nozzle temp')) {
             settings.default_nozzle = sel.value;
         }
     }
-    $('bed').onclick = (ev) => {
+    $('bed_temp').onclick = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
-            $('bed').setSelectionRange(10, 10);
+            $('bed_temp').setSelectionRange(10, 10);
         }
-        input = $('bed');
+        input = $('bed_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
             input.value = settings.default_bed || '55';
         }
         ev.stopPropagation();
     };
-    $('bed').ondblclick = (ev) => {
-        let sel = $('bed');
+    $('bed_temp').ondblclick = (ev) => {
+        let sel = $('bed_temp');
         if (sel.value !== '0' && confirm('set default bed temp')) {
             settings.default_bed = sel.value;
         }
@@ -676,22 +764,20 @@ function init() {
         }
     };
     $('kp-ok').onclick = (ev) => {
-        if (input === $('bed')) {
+        if (input === $('bed_temp')) {
             setbed(42);
         }
-        if (input === $('nozzle')) {
+        if (input === $('nozzle_temp')) {
             setnozzle(42);
         }
         ev.stopPropagation();
     };
-    $('b-ctrl').onclick = showControl;
-    $('b-cmd').onclick = showCommand;
     // reload page on status click
-    $('header').onclick = ev => {
-        if (ev.target.id === 'state') {
-            reload();
-        }
-    };
+    // $('header').onclick = ev => {
+    //     if (ev.target.id === 'state') {
+    //         reload();
+    //     }
+    // };
     // disable autocomplete
     let inputs = document.getElementsByTagName('input');
     for (let i=0; i<inputs.length; i++) {
@@ -700,5 +786,6 @@ function init() {
     init_filedrop();
     input_deselect();
     // restore settings
-    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_el || "j10"));
+    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j10"));
+    set_jog_speed(parseFloat(settings.jog_speed) || 1, $(settings.jog_speed_sel || "js1000"));
 }
