@@ -101,14 +101,17 @@ button {
 }
 #pages > div {
     display: none;
-    width: 750px;
-    height: 480px;
+    width: 749px;
+    height: 478px;
     background-color: #f4f4f4;
+    border-top: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
 }
 #page-home, #page-ctrl, #page-move {
     padding: 5px;
-    width: 740px !important;
-    height: 470px !important;
+    width: 739px !important;
+    height: 468px !important;
 }
 #progress-box {
     position: relative;
