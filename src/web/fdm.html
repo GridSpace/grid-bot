@@ -6,7 +6,7 @@
         <script src="fa.min.js"></script>
         <link rel="stylesheet" type="text/css" href="fdm.css">
     </head>
-    <body onload="init()" xclass="col">
+    <body onload="init()">
         <div id="body" class="row items-stretch">
             <div id="menu" class="col items-center">
                 <div id="menu-home"><i class="fas fa-home"></i></div>
@@ -23,32 +23,35 @@
                     <div class="row">
                         <div class="col printing">
                             <div class="row">
-                                <label>file</label>
+                                <label>File</label>
                                 <input id="filename" disabled="true" class="grow"></input>
                             </div>
                             <div class="row">
-                                <label>progress</label>
-                                <input id="progress" disabled="true" size="6" class="text-center"></input>
+                                <label>Elapsed</label>
+                                <input id="elapsed" disabled="true" size="10" class="text-center grow"></input>
                             </div>
                             <div class="row">
-                                <label>elapsed</label>
-                                <input id="elapsed" disabled="true" size="10" class="text-center"></input>
+                                <label>Progress</label>
+                                <div id="progress-box" class="col grow">
+                                    <input id="progress" disabled="true" size="6" class="text-center grow"></input>
+                                    <div id="progress-bar"></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col">
-                            <button id="pause" onclick="pause()">pause</button>
-                            <button id="resume" onclick="resume()">resume</button>
-                            <button id="abort" onclick="abort()">abort</button>
+                            <div class="row">
+                                <button id="pause" class="grow" onclick="pause()">Pause</button>
+                                <button id="resume" class="grow" onclick="resume()">Resume</button>
+                                <button id="abort" class="grow" onclick="abort()">Abort</button>
+                            </div>
                         </div>
                         <div class="grow"></div>
-                        <div class="col">
+                        <div class="col heating">
                             <div class="row">
-                                <label class="grow">bed</label>
+                                <label class="grow">Bed</label>
                                 <input id="bed_temp" value="" size="5" class="editable"></input>
                                 <button id="bed_toggle" onclick="bed_toggle()">on</button>
                             </div>
                             <div class="row">
-                                <label class="grow">nozzle</label>
+                                <label class="grow">Nozzle</label>
                                 <input id="nozzle_temp" value="" size="5" class="editable"></input>
                                 <button id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
                             </div>
@@ -84,68 +87,96 @@
                     <button id="clear_bed" onclick="clear_bed()">clear bed</button>
                 </div>
 
-                <div id="page-move">
-                    <div class="col">
-                        <div class="row">
-                            <label>X</label>
-                            <input id="xpos" value="" size="6" disabled="true"></input>
+                <div id="page-move" class="col">
+                    <div class="grow"></div>
+                    <div class="row jog">
+                        <div class="grow"></div>
+                        <div class="col xyz">
+                            <div class="row">
+                                <label>X</label>
+                                <input id="xpos" value="" size="7" disabled="true"></input>
+                            </div>
+                            <div class="row">
+                                <label>Y</label>
+                                <input id="ypos" value="" size="7" disabled="true"></input>
+                            </div>
+                            <div class="row">
+                                <label>Z</label>
+                                <input id="zpos" value="" size="7" disabled="true"></input>
+                            </div>
                         </div>
-                        <div class="row">
-                            <label>Y</label>
-                            <input id="ypos" value="" size="6" disabled="true"></input>
-                        </div>
-                        <div class="row">
-                            <label>Z</label>
-                            <input id="zpos" value="" size="6" disabled="true"></input>
-                        </div>
-                    </div>
-                    <table>
-                        <tr>
-                            <td><button onclick="jog('Z',-1)">Z-</button></td>
-                            <td><button onclick="jog('Y',-1)">Y-</button></td>
-                            <td><button onclick="retract()">E-</button></td>
-                        </tr>
-                        <tr>
-                            <td><button onclick="jog('X',-1)">X-</button></td>
-                            <td><button onclick="goto_home()" class="fa fa-home"></button></td>
-                            <td><button onclick="jog('X',1)">X+</button></td>
-                        </tr>
-                        <tr>
-                            <td><button onclick="jog('Z',1)">Z+</button></td>
-                            <td><button onclick="jog('Y',1)">Y+</button></td>
-                            <td><button onclick="extrude()">E+</button></td>
-                        </tr>
-                    </table>
-                    <div id="jog_set" class="row align_center justify_center">
                         <div class="col">
-                            <button id="j001" onclick="set_jog(0.01,this)">0.01</button>
-                            <button id="j010" onclick="set_jog(0.10,this)">0.10</button>
-                            <button id="j100" onclick="set_jog(1.00,this)">1.00</button>
-                            <button id="j500" onclick="set_jog(5.00,this)">5</button>
-                            <button id="j1000" onclick="set_jog(10.0,this)">10</button>
-                            <button id="j5000" onclick="set_jog(50.0,this)">50</button>
-                            <button id="j10000" onclick="set_jog(100.0,this)">100</button>
+                            <button onclick="origin_set()">Set Origin</button>
+                            <button onclick="origin_clear()">Clear Origin</button>
+                            <button onclick="origin_go()">Goto Origin</button>
                         </div>
+                        <div class="col">
+                            <button onclick="center_go()">Goto Center</button>
+                            <button onclick="send_safe('M18')">Disable motors</button>
+                            <button onclick="send_safe('M17')">Enable motors</button>
+                        </div>
+                        <div class="grow"></div>
                     </div>
-                    <div id="jog_speed" class="col">
-                        <button id="js0500" onclick="set_jog_speed(500,this)">500</button>
-                        <button id="js1000" onclick="set_jog_speed(1000,this)">1000</button>
-                        <button id="js2000" onclick="set_jog_speed(2000,this)">2000</button>
-                        <button id="js3000" onclick="set_jog_speed(3000,this)">3000</button>
-                        <button id="js4000" onclick="set_jog_speed(4000,this)">4000</button>
-                        <button id="js5000" onclick="set_jog_speed(5000,this)">5000</button>
-                        <button id="js6000" onclick="set_jog_speed(6000,this)">6000</button>
+                    <div class="grow"></div>
+                    <div class="row">
+                        <div class="grow"></div>
+                        <div class="col jog">
+                            <label class="text-center">Increment</label>
+                            <div class="row">
+                                <div id="jog_set" class="col grow">
+                                    <button id="j001" onclick="set_jog(0.01,this)">0.01</button>
+                                    <button id="j010" onclick="set_jog(0.10,this)">0.10</button>
+                                    <button id="j100" onclick="set_jog(1.00,this)">1.00</button>
+                                </div>
+                                <div id="jog_set" class="col grow">
+                                    <button id="j1000" onclick="set_jog(10.0,this)">10</button>
+                                    <button id="j5000" onclick="set_jog(50.0,this)">50</button>
+                                    <button id="j10000" onclick="set_jog(100.0,this)">100</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grow"></div>
+                        <div class="col">
+                            <label class="text-center">Jog</label>
+                            <table>
+                                <tr>
+                                    <td><button onclick="jog('Z',-1)">Z-</button></td>
+                                    <td><button onclick="jog('Y',-1)">Y-</button></td>
+                                    <td><button onclick="retract()">E-</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('X',-1)">X-</button></td>
+                                    <td><button onclick="goto_home()" class="fa fa-home"></button></td>
+                                    <td><button onclick="jog('X',1)">X+</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('Z',1)">Z+</button></td>
+                                    <td><button onclick="jog('Y',1)">Y+</button></td>
+                                    <td><button onclick="extrude()">E+</button></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="grow"></div>
+                        <div class="col jog">
+                            <label class="text-center">Speed</label>
+                            <div class="row">
+                                <div id="jog_speed" class="col grow">
+                                    <button id="js0100" onclick="set_jog_speed(100,this)">100</button>
+                                    <button id="js0500" onclick="set_jog_speed(500,this)">500</button>
+                                    <button id="js1000" onclick="set_jog_speed(1000,this)">1000</button>
+                                    <button id="js2000" onclick="set_jog_speed(2000,this)">2000</button>
+                                </div>
+                                <div id="jog_speed" class="col grow">
+                                    <button id="js3000" onclick="set_jog_speed(3000,this)">3000</button>
+                                    <button id="js4000" onclick="set_jog_speed(4000,this)">4000</button>
+                                    <button id="js5000" onclick="set_jog_speed(5000,this)">5000</button>
+                                    <button id="js6000" onclick="set_jog_speed(6000,this)">6000</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grow"></div>
                     </div>
-                    <div class="col">
-                        <button onclick="origin_go()">Goto Origin</button>
-                        <button onclick="origin_set()">Set Origin</button>
-                        <button onclick="origin_clear()">Clear Origin</button>
-                        <button onclick="center_go()">Goto Center</button>
-                    </div>
-                    <div class="col">
-                        <button onclick="send_safe('M18')">disable motors</button>
-                        <button onclick="send_safe('M17')">enable motors</button>
-                    </div>
+                    <div class="grow"></div>
                 </div>
 
                 <div id="page-file" class="row">
@@ -192,19 +223,26 @@
                             <button onclick="eeprom_restore()">restore</button>
                         </div>
                         <div class="col">
-                            <label>Fetch</label>
+                            <label>Update</label>
                             <button onclick="update_endstops()">endstops</button>
                             <button onclick="update_position()">position</button>
                             <button onclick="update_temps()">temps</button>
                         </div>
                         <div class="col">
-                            <label>Test</label>
+                            <label>Run</label>
                             <button onclick="fan_on()">fan on</button>
                             <button onclick="fan_off()">fan off</button>
+                            <button onclick="calibrate_pid()">nozzle pid</button>
                         </div>
                         <div class="col">
-                            <label>Calibrate</label>
-                            <button onclick="calibrate_pid()">nozzle pid</button>
+                            <label>Controller</label>
+                            <button onclick="update_code()">update</button>
+                            <button onclick="update_code()">restart</button>
+                        </div>
+                        <div class="col">
+                            <label>System</label>
+                            <button onclick="restart()">restart</button>
+                            <button onclick="shutdown()">shutdown</button>
                         </div>
                     </div>
                 </div>

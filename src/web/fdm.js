@@ -572,6 +572,7 @@ function init() {
             if (status.print) {
                 $('filename').value = cleanName(status.print.filename);
                 $('progress').value = status.print.progress + '%';
+                $('progress-bar').style.width = $('progress').value;
                 if (status.print.clear) {
                     $('clear_bed').classList.remove('bg_red');
                 } else {

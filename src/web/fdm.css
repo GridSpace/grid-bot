@@ -40,7 +40,7 @@ input:focus {
     background-color: #f9f9f9;
 }
 button {
-    padding: 3px 5px 3px 5px;
+    padding: 5px 8px 5px 8px;
     border-radius: 5px;
     font-size: large;
 }
@@ -107,14 +107,41 @@ button {
     background-color: #f4f4f4;
 }
 
-#page-home {
+#page-home, #page-ctrl, #page-move {
     padding: 5px;
     width: 740px !important;
     height: 470px !important;
 }
 
+#progress-box {
+    position: relative;
+}
+
+#progress-bar {
+    margin: 6px;
+    border-radius: 2px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(255,0,0,0.5);
+}
+
 .printing label {
     width: 5em;
+}
+
+.printing input {
+    margin: 5px;
+}
+
+.printing button {
+    margin: 5px;
+}
+
+.heating button {
+    width: 50px;
 }
 
 #page-home button {
@@ -136,8 +163,8 @@ button {
 
 #keypad {
     position: absolute;
-    right: 0;
-    bottom: 0;
+    right: 5px;
+    bottom: 50px;
     z-index: 100000;
     border: 1px solid #ddd;
     background-color: #f8f8f8;
@@ -147,6 +174,26 @@ button {
 #keypad button {
     width: 50px;
     height: 50px;
+    margin: 3px;
+}
+
+#page-move td button {
+    min-width: 50px !important;
+    min-height: 50px !important;
+}
+#page-move td {
+    text-align: center;
+}
+
+.xyz > div {
+    margin: 4px;
+}
+
+.xyz input {
+    text-align: right;
+}
+
+.jog button {
     margin: 3px;
 }
 
@@ -203,22 +250,6 @@ button {
     background-color: #e8e8e8;
 }
 
-#page-ctrl > label {
-    margin: 0;
-    padding: 5px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #ddd;
-    background-color: white;
-}
-
-#page-ctrl > label:nth-child(1n+3) {
-    border-top: 1px solid #ddd;
-}
-
-#page-ctrl > div {
-    padding: 5px;
-}
-
 #comm-input {
     background-color: white;
     padding: 5px 5px 5px 5px;
@@ -241,6 +272,26 @@ button {
     background-position: center;
     background-repeat: no-repeat;
     background-image: var(--video-url);
+}
+
+#page-ctrl > label {
+    margin: 0;
+    padding: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: white;
+}
+
+#page-ctrl > label:nth-child(1n+3) {
+    border-top: 1px solid #ddd;
+}
+
+#page-ctrl > div {
+    padding: 5px;
+}
+
+#page-ctrl button {
+    font-size: medium !important;
 }
 
 .settings:hover {
