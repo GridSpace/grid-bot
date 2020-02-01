@@ -51,9 +51,6 @@ button {
     font-family: sans-serif;
     align-items: center;
     justify-content: flex-start;
-    border-left: 1px solid white;
-    border-right: 1px dashed #ddd;
-    border-bottom: 1px dashed #ddd;
     top: 0;
     left: 0;
     right: 0;
