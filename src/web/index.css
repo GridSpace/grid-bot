@@ -1,7 +1,9 @@
 :root {
     --video-url: url("data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=");
 }
-
+*:focus {
+    outline: none;
+}
 div,span {
     x-box-sizing: border-box;
 }
@@ -44,7 +46,6 @@ button {
     border-radius: 5px;
     font-size: large;
 }
-
 #body {
     font-size: 14px;
     font-family: sans-serif;
@@ -68,7 +69,6 @@ button {
     overflow: hidden;
     position: fixed;
 }
-
 #menu {
     width: 50px;
     font-size: 30px !important;
@@ -99,68 +99,68 @@ button {
     border-top: 1px solid black !important;
     background-color: #f4f4f4;
 }
-
 #pages > div {
     display: none;
     width: 750px;
     height: 480px;
     background-color: #f4f4f4;
 }
-
 #page-home, #page-ctrl, #page-move {
     padding: 5px;
     width: 740px !important;
     height: 470px !important;
 }
-
 #progress-box {
     position: relative;
 }
-
+#filename {
+    text-align: center;
+}
+#progress-box {
+    margin: 6px !important;
+}
+#progress-box input {
+    margin: 0;
+}
+#progress-box div {
+    margin: 0;
+}
 #progress-bar {
-    margin: 6px;
+    xmargin: 6px;
     border-radius: 2px;
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 0;
-    background-color: rgba(255,0,0,0.5);
+    width: 100%;
+    background-color: rgba(255,0,0,0.25);
 }
-
 .printing label {
     width: 5em;
 }
-
 .printing input {
     margin: 5px;
 }
-
 .printing button {
     margin: 5px;
 }
-
 .heating button {
     width: 50px;
 }
-
 #page-home button {
     margin-bottom: 5px;
 }
-
 #page-home input:nth-child(1n+2) {
     margin-bottom: 5px;
 }
-
 #state {
     text-align: center;
     margin-bottom: 20px;
 }
-
-#bed_temp,#nozzle_temp {
-    width: 50px;
+#bed_at,#nozzle_at,#bed_temp,#nozzle_temp {
+    width: 60px;
+    margin-left: 0;
 }
-
 #keypad {
     position: absolute;
     right: 5px;
@@ -170,13 +170,11 @@ button {
     background-color: #f8f8f8;
     padding: 10px;
 }
-
 #keypad button {
     width: 50px;
     height: 50px;
     margin: 3px;
 }
-
 #page-move td button {
     min-width: 50px !important;
     min-height: 50px !important;
@@ -184,72 +182,61 @@ button {
 #page-move td {
     text-align: center;
 }
-
 .xyz > div {
     margin: 4px;
 }
-
 .xyz input {
     text-align: right;
 }
-
 .jog button {
     margin: 3px;
 }
-
 #page-file > div {
     width: 50%;
 }
-
 #file-list-wrap, #file-detail {
     overflow-y: auto;
     margin: 10px;
 }
-
 #file-list {
     font-family: monospace;
     background: #fafafa;
     border-radius: 5px;
 }
-
+#file-list label {
+    font-size: x-large;
+    overflow-x: hidden;
+}
 #file-list button {
     font-size: smaller;
     margin: 2px 4px 2px 4px;
     padding: 2px 4px 2px 4px;
     border-radius: 3px;
 }
-
 #file-list > div:hover {
     background-color: #ddd;
 }
-
 #file-info {
     border-bottom: 1px solid #ddd;
 }
-
 #file-info > div {
     display: flex;
     flex-direction: row;
 }
-
 #file-info label {
     font-weight: bold;
     width: 75px;
 }
-
 #file-info span {
     margin: 5px 5px 5px 10px;
     font-size: larger;
 }
-
 #file-detail button {
     margin-top: 5px;
 }
-
 .file-selected {
     background-color: #e8e8e8;
 }
-
 #comm-input {
     background-color: white;
     padding: 5px 5px 5px 5px;
@@ -265,7 +252,6 @@ button {
     overflow-y: auto;
     padding: 5px;
 }
-
 #page-vids {
     background: black;
     background-size: contain;
@@ -273,7 +259,6 @@ button {
     background-repeat: no-repeat;
     background-image: var(--video-url);
 }
-
 #page-ctrl > label {
     margin: 0;
     padding: 5px;
@@ -281,19 +266,19 @@ button {
     border-bottom: 1px solid #ddd;
     background-color: white;
 }
-
 #page-ctrl > label:nth-child(1n+3) {
     border-top: 1px solid #ddd;
 }
-
 #page-ctrl > div {
     padding: 5px;
 }
-
 #page-ctrl button {
     font-size: medium !important;
 }
-
+#settings {
+    overflow-y: auto;
+    min-height: 0;
+}
 .settings:hover {
     background-color: #eee;
 }
@@ -314,7 +299,6 @@ button {
 #actions > div {
     margin-right: 5px;
 }
-
 .row {
     display: flex;
     flex-direction: row;
@@ -387,8 +371,4 @@ button {
 }
 .bg_yellow {
     background-color: #ffd !important;
-}
-
-*:focus {
-    outline: none;
 }

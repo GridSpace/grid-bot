@@ -570,6 +570,7 @@ function init() {
                     $('bed_temp').classList.remove('bg_red');
                     $('bed_toggle').innerText = 'on';
                 }
+                $('bed_at').value = status.temp.bed;
                 if (status.target.ext[0] > 0) {
                     if ($('nozzle_temp') !== input) {
                         $('nozzle_temp').value = status.target.ext[0];
@@ -583,6 +584,7 @@ function init() {
                     $('nozzle_temp').classList.remove('bg_red');
                     $('nozzle_toggle').innerText = 'on';
                 }
+                $('nozzle_at').value = status.temp.ext;
             }
             if (status.pos) {
                 $('xpos').value = parseFloat(status.pos.X).toFixed(2);

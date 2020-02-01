@@ -46,14 +46,16 @@
                         <div class="grow"></div>
                         <div class="col heating">
                             <div class="row">
-                                <label class="grow">Bed</label>
-                                <input id="bed_temp" value="" size="5" class="editable"></input>
-                                <button id="bed_toggle" onclick="bed_toggle()">on</button>
-                            </div>
-                            <div class="row">
                                 <label class="grow">Nozzle</label>
+                                <input id="nozzle_at" disabled="true" value="" size="5"></input>
                                 <input id="nozzle_temp" value="" size="5" class="editable"></input>
                                 <button id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
+                            </div>
+                            <div class="row">
+                                <label class="grow">Bed</label>
+                                <input id="bed_at" disabled="true" value="" size="5"></input>
+                                <input id="bed_temp" value="" size="5" class="editable"></input>
+                                <button id="bed_toggle" onclick="bed_toggle()">on</button>
                             </div>
                         </div>
                     </div>
