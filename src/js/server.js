@@ -1281,7 +1281,7 @@ function grid_spool() {
                 return;
             }
             if (body === 'reconnect') {
-                console.log({reconnect: timer});
+                // console.log({reconnect: timer});
                 setTimeout(grid_spool, 100);
             } else {
                 let [file, gcode] = body.split("\0");
