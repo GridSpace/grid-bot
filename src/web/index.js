@@ -32,6 +32,8 @@ let jog_speed = 1000;
 let input = null;       // active input for keypad
 let settings = localStorage;
 let selected = null;
+let mode = null;        // for checking against current status
+let run_verb = 'print';
 
 function $(id) {
     return document.getElementById(id);
@@ -97,6 +99,7 @@ function select(file, ext) {
     if (file) {
         $('file-name').innerText = file.name;
         $('file-date').innerText = moment(new Date(file.time)).format('YY/MM/DD HH:mm:ss');
+        // add thousand's place commas
         $('file-size').innerText = file.size
             .toString()
             .split('')
@@ -113,7 +116,7 @@ function select(file, ext) {
         } else {
             $('file-last').style.display = 'none';
         }
-        $('file-go').innerText = (ext === 'g' ? 'print' : 'install');
+        $('file-go').innerText = (ext === 'g' ? run_verb : 'install');
         if (file_selected) {
             file_selected.classList.remove("file-selected");
         }
@@ -162,15 +165,34 @@ function clear_files() {
 
 function center_go() {
     let stat = last_set;
-    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F7000`);
+    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F${jog_speed}`);
+}
+
+function home_go() {
+    if (mode === 'fdm') {
+        send_safe('G28;M18');
+    }
+    if (mode === 'cnc') {
+        origin_go();
+    }
+}
+
+function origin_go() {
+    send_safe(`G0 X0 Y0 F${jog_speed}`);
+    if (mode === 'fdm') {
+        send_safe('G0 Z0');
+    }
 }
 
 function origin_set() {
     if (alert_on_run()) return;
-    if (last_set && last_set.pos) {
+    if (mode === 'fdm' && last_set && last_set.pos) {
         let pos = last_set.pos;
         send(`M206 X-${pos.X} Y-${pos.Y}`);
         send('M500');
+    }
+    if (mode === 'cnc') {
+        send('G92 X0 Y0 Z0');
     }
 }
 
@@ -309,12 +331,22 @@ function abort() {
 
 function extrude(v) {
     if (alert_on_run()) return;
-    gr(`E${jog_val} F250`);
+    if (mode === 'fdm') {
+        gr(`E${jog_val} F250`);
+    }
+    if (mode === 'cnc') {
+        jog('Z', 1);
+    }
 }
 
 function retract(v) {
     if (alert_on_run()) return;
-    gr(`E-${jog_val} F250`);
+    if (mode === 'fdm') {
+        gr(`E-${jog_val} F250`);
+    }
+    if (mode === 'cnc') {
+        jog('Z', -1);
+    }
 }
 
 function set_jog(val, el) {
@@ -347,9 +379,7 @@ function jog(axis, dir) {
 }
 
 function gr(msg) {
-    send('G91');
-    send(`G0 ${msg}`);
-    send('G90');
+    send(`G91; G0 ${msg}; G90`);
 }
 
 function send_confirm(message, what) {
@@ -471,6 +501,186 @@ function menu_select(key) {
     }
 }
 
+function status_update(status) {
+    if (status.state) {
+        $('state').value = status.print.pause ? "paused" : status.state;
+    }
+    if (status.device && status.device.name) {
+        document.title = status.device.name;
+    }
+    if (status.print) {
+        $('filename').value = cleanName(status.print.filename);
+        $('progress').value = status.print.progress + '%';
+        let brec = $('body').getBoundingClientRect();
+        let rect = $('progress').getBoundingClientRect();
+        let pbar = $('progress-bar');
+        pbar.style.top = `${rect.y - brec.y}px`;
+        pbar.style.left = `${rect.x - brec.x}px`;
+        pbar.style.width = `${rect.width * (status.print.progress/100)}px`;
+        pbar.style.height = `${rect.height}px`;
+        if (status.print.clear) {
+            $('clear-bed').classList.remove('bg_red');
+        } else {
+            $('clear-bed').classList.add('bg_red');
+        }
+        if (status.print.run) {
+            $('state').classList.add('bg_green');
+        } else {
+            $('state').classList.remove('bg_green');
+        }
+        let duration = 0;
+        if (status.print.end && status.print.end > status.print.start) {
+            duration = status.print.end - status.print.start;
+        } else if (status.print.prep || status.print.start) {
+            duration = (status.print.mark || Date.now()) - status.print.start;
+        }
+        $('elapsed').value = elapsed(duration);
+    }
+    if (status.target) {
+        if (status.target.bed > 0) {
+            if ($('bed_temp') !== input) {
+                $('bed_temp').value = status.target.bed;
+                // $('bed').classList.add('bg_red');
+            }
+            $('bed_temp').classList.add('bg_red');
+            $('bed_toggle').innerText = 'off';
+        } else {
+            if ($('bed_temp') !== input) {
+                $('bed_temp').value = 0;
+            }
+            $('bed_temp').classList.remove('bg_red');
+            $('bed_toggle').innerText = 'on';
+        }
+        $('bed_at').value = Math.round(status.temp.bed);
+        if (status.target.ext[0] > 0) {
+            if ($('nozzle_temp') !== input) {
+                $('nozzle_temp').value = status.target.ext[0];
+            }
+            $('nozzle_temp').classList.add('bg_red');
+            $('nozzle_toggle').innerText = 'off';
+        } else {
+            if ($('nozzle_temp') !== input) {
+                $('nozzle_temp').value = 0;
+            }
+            $('nozzle_temp').classList.remove('bg_red');
+            $('nozzle_toggle').innerText = 'on';
+        }
+        $('nozzle_at').value = Math.round(status.temp.ext);
+    }
+    if (status.pos) {
+        $('xpos').value = parseFloat(status.pos.X).toFixed(2);
+        $('ypos').value = parseFloat(status.pos.Y).toFixed(2);
+        $('zpos').value = parseFloat(status.pos.Z).toFixed(2);
+    }
+    // highlight X,Y,Z pod label when @ origin
+    if (status.settings && status.settings.offset && status.pos) {
+        let off = status.settings.offset;
+        let pos = status.pos;
+        $('xpos').classList.remove('bg_green');
+        $('ypos').classList.remove('bg_green');
+        $('zpos').classList.remove('bg_green');
+        if (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z) < 0.1) {
+            // highlight origin as green
+            $('xpos').classList.add('bg_green');
+            $('ypos').classList.add('bg_green');
+            $('zpos').classList.add('bg_green');
+        }
+    }
+    if (status.estop && status.estop.min) {
+        $('xpos').classList.remove('bg_yellow');
+        $('ypos').classList.remove('bg_yellow');
+        $('zpos').classList.remove('bg_yellow');
+        let min = status.estop.min;
+        if (min.x === ' TRIGGERED') $('xpos').classList.add('bg_yellow');
+        if (min.y === ' TRIGGERED') $('ypos').classList.add('bg_yellow');
+        if (min.z === ' TRIGGERED') $('zpos').classList.add('bg_yellow');
+    }
+    if (status.settings) {
+        let valuehash = '';
+        let html = ['<table>'];
+        let bind = [];
+        for (let key in status.settings) {
+            let map = status.settings[key];
+            html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
+            for (let k in map) {
+                let bk = `ep-${key}-${k}`;
+                let bv = [key, k];
+                html.push(`<th>${k}</th>`);
+                html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
+                valuehash += [k,map[k]].join('');
+                bind.push({bk,bv});
+            }
+            html.push('</tr>');
+        }
+        html.push('</table>');
+        if (valuehash !== last_hash) {
+            $('settings').innerHTML = html.join('');
+            bind.forEach(el => {
+                let {bk, bv} = el;
+                let input = $(bk);
+                input.onkeyup = (ev) => {
+                    if (ev.keyCode === 13) {
+                        send_safe(`${bv[0]} ${bv[1]}${input.value.trim()}`);
+                    }
+                };
+            });
+        }
+        last_hash = valuehash;
+    }
+    if (status.device.mode !== mode) {
+        set_mode(mode = status.device.mode);
+    }
+}
+
+function set_mode(mode) {
+    if (mode === 'cnc') {
+        set_mode_cnc();
+    }
+    if (mode === 'fdm') {
+        set_mode_fdm();
+    }
+}
+
+function set_mode_cnc() {
+    // home
+    $('heating').style.display = 'none';
+    $('print-spacer').style.display = 'none';
+    $('clear-verb').innerText = 'clear build area';
+    // move
+    $('clear-origin').style.display = 'none';
+    $('go-center').style.display = 'none';
+    $('e-up').innerText = 'Z+';
+    $('e-dn').innerText = 'Z-';
+    // files
+    run_verb = 'execute';
+    let filego = $('file-go');
+    if (filego.innerText !== 'install') {
+        filego.innerText = run_verb;
+    }
+    // control
+    $('ctrl-run-fdm').style.display = 'none';
+}
+
+function set_mode_fdm() {
+    // home
+    $('heating').style.display = '';
+    $('print-spacer').style.display = '';
+    $('clear-verb').innerText = 'clear bed';
+    // move
+    $('clear-origin').style.display = '';
+    $('go-center').style.display = '';
+    $('e-up').innerText = 'E+';
+    $('e-dn').innerText = 'E-';
+    // files
+    run_verb = 'print';
+    let filego = $('file-go');
+    if (filego.innerText !== 'install') {
+        filego.innerText = run_verb;
+    }
+    // control
+    $('ctrl-run-fdm').style.display = '';
+}
+
 function init() {
     // bind left menu items and select default
     menu = {
@@ -531,133 +741,7 @@ function init() {
         let spos = msg.indexOf("*** ");
         let epos = msg.lastIndexOf(" ***");
         if (msg.indexOf("*** {") >= 0) {
-            let status = JSON.parse(msg.substring(spos+4, epos));
-            last_set = status;
-            if (status.state) {
-                $('state').value = status.print.pause ? "paused" : status.state;
-            }
-            if (status.device && status.device.name) {
-                document.title = status.device.name;
-            }
-            if (status.print) {
-                $('filename').value = cleanName(status.print.filename);
-                $('progress').value = status.print.progress + '%';
-                $('progress-bar').style.width = $('progress').value;
-                if (status.print.clear) {
-                    $('clear_bed').classList.remove('bg_red');
-                } else {
-                    $('clear_bed').classList.add('bg_red');
-                }
-                if (status.print.run) {
-                    $('state').classList.add('bg_green');
-                    // $('filename').classList.add('bg_green');
-                    // $('progress').classList.add('bg_green');
-                    // $('elapsed').classList.add('bg_green');
-                } else {
-                    $('state').classList.remove('bg_green');
-                    // $('filename').classList.remove('bg_green');
-                    // $('progress').classList.remove('bg_green');
-                    // $('elapsed').classList.remove('bg_green');
-                }
-                let duration = 0;
-                if (status.print.end && status.print.end > status.print.start) {
-                    duration = status.print.end - status.print.start;
-                } else if (status.print.prep || status.print.start) {
-                    duration = (status.print.mark || Date.now()) - status.print.start;
-                }
-                $('elapsed').value = elapsed(duration);
-            }
-            if (status.target) {
-                if (status.target.bed > 0) {
-                    if ($('bed_temp') !== input) {
-                        $('bed_temp').value = status.target.bed;
-                        // $('bed').classList.add('bg_red');
-                    }
-                    $('bed_temp').classList.add('bg_red');
-                    $('bed_toggle').innerText = 'off';
-                } else {
-                    if ($('bed_temp') !== input) {
-                        $('bed_temp').value = 0;
-                    }
-                    $('bed_temp').classList.remove('bg_red');
-                    $('bed_toggle').innerText = 'on';
-                }
-                $('bed_at').value = Math.round(status.temp.bed);
-                if (status.target.ext[0] > 0) {
-                    if ($('nozzle_temp') !== input) {
-                        $('nozzle_temp').value = status.target.ext[0];
-                    }
-                    $('nozzle_temp').classList.add('bg_red');
-                    $('nozzle_toggle').innerText = 'off';
-                } else {
-                    if ($('nozzle_temp') !== input) {
-                        $('nozzle_temp').value = 0;
-                    }
-                    $('nozzle_temp').classList.remove('bg_red');
-                    $('nozzle_toggle').innerText = 'on';
-                }
-                $('nozzle_at').value = Math.round(status.temp.ext);
-            }
-            if (status.pos) {
-                $('xpos').value = parseFloat(status.pos.X).toFixed(2);
-                $('ypos').value = parseFloat(status.pos.Y).toFixed(2);
-                $('zpos').value = parseFloat(status.pos.Z).toFixed(2);
-            }
-            // highlight X,Y,Z pod label when @ origin
-            if (status.settings && status.settings.offset && status.pos) {
-                let off = status.settings.offset;
-                let pos = status.pos;
-                $('xpos').classList.remove('bg_green');
-                $('ypos').classList.remove('bg_green');
-                $('zpos').classList.remove('bg_green');
-                if (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z) < 0.1) {
-                    // highlight origin as green
-                    $('xpos').classList.add('bg_green');
-                    $('ypos').classList.add('bg_green');
-                    $('zpos').classList.add('bg_green');
-                }
-            }
-            if (status.estop && status.estop.min) {
-                $('xpos').classList.remove('bg_yellow');
-                $('ypos').classList.remove('bg_yellow');
-                $('zpos').classList.remove('bg_yellow');
-                let min = status.estop.min;
-                if (min.x === ' TRIGGERED') $('xpos').classList.add('bg_yellow');
-                if (min.y === ' TRIGGERED') $('ypos').classList.add('bg_yellow');
-                if (min.z === ' TRIGGERED') $('zpos').classList.add('bg_yellow');
-            }
-            if (status.settings) {
-                let valuehash = '';
-                let html = ['<table>'];
-                let bind = [];
-                for (let key in status.settings) {
-                    let map = status.settings[key];
-                    html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
-                    for (let k in map) {
-                        let bk = `ep-${key}-${k}`;
-                        let bv = [key, k];
-                        html.push(`<th>${k}</th>`);
-                        html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
-                        valuehash += [k,map[k]].join('');
-                        bind.push({bk,bv});
-                    }
-                    html.push('</tr>');
-                }
-                html.push('</table>');
-                if (valuehash !== last_hash) {
-                    $('settings').innerHTML = html.join('');
-                    bind.forEach(el => {
-                        let {bk, bv} = el;
-                        let input = $(bk);
-                        input.onkeyup = (ev) => {
-                            if (ev.keyCode === 13) {
-                                send_safe(`${bv[0]} ${bv[1]}${input.value.trim()}`);
-                            }
-                        };
-                    });
-                }
-                last_hash = valuehash;
-            }
+            status_update(last_set = JSON.parse(msg.substring(spos+4, epos)));
         } else if (msg.indexOf("*** [") >= 0) {
             let list = $('file-list');
             let html = [];
@@ -668,7 +752,7 @@ function init() {
                 let uuid = (time++).toString(36);
                 let ext = file.ext.charAt(0);
                 let name = cleanName(file.name);
-                let cname = ext === 'g' ? name : [name,ext].join('.');
+                let cname = ext === 'g' ? name : [name,file.ext].join('.');
                 files[name] = file;
                 file.uuid = uuid;
                 html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${cname}</label></div>`);

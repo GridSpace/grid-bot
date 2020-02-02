@@ -461,7 +461,11 @@ function on_serial_line(line) {
     // parse M114 x/y/z/e positions
     if (line.indexOf("X:") === 0) {
         let pos = status.pos = {};
+        let done = false;
         line.split(' ').forEach(tok => {
+            if (done) {
+                return;
+            }
             tok = tok.split(':');
             if (tok.length === 2) {
                 // do not overwrite value (Z: comes twice, for example)
@@ -469,6 +473,8 @@ function on_serial_line(line) {
                     pos[tok[0]] = parseFloat(tok[1]);
                     update = true;
                 }
+            } else {
+                done = true;
             }
         });
     }
@@ -725,6 +731,8 @@ function process_input_two(line, channel) {
         case "*debug off": return debug = false;
         case "*extrude on": return extrude = true;
         case "*extrude off": return extrude = false;
+        case "*setmode fdm": return status.device.mode = 'fdm';
+        case "*setmode cnc": return status.device.mode = 'cnc';
         case "*match":
             console.log({match});
             return;

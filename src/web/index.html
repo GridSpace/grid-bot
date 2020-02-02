@@ -21,7 +21,7 @@
                     <input id="state" disabled="true"></input>
 
                     <div class="row">
-                        <div class="col printing">
+                        <div id="printing" class="col grow">
                             <div class="row">
                                 <label>File</label>
                                 <input id="filename" disabled="true" class="grow"></input>
@@ -32,10 +32,8 @@
                             </div>
                             <div class="row">
                                 <label>Progress</label>
-                                <div id="progress-box" class="col grow">
-                                    <input id="progress" disabled="true" class="text-center grow"></input>
-                                    <div id="progress-bar"></div>
-                                </div>
+                                <input id="progress" disabled="true" class="text-center grow"></input>
+                                <div id="progress-bar"></div>
                             </div>
                             <div class="row">
                                 <button id="pause" class="grow" onclick="pause()">Pause</button>
@@ -43,8 +41,8 @@
                                 <button id="abort" class="grow" onclick="abort()">Abort</button>
                             </div>
                         </div>
-                        <div class="grow"></div>
-                        <div class="col heating">
+                        <div id="print-spacer" class="grow"></div>
+                        <div id="heating" class="col">
                             <div class="row">
                                 <label class="grow">Nozzle</label>
                                 <input id="nozzle_at" disabled="true" value="" size="5"></input>
@@ -87,7 +85,7 @@
                     <div class="grow"></div>
 
                     <div class="row homeact">
-                        <button id="clear_bed" onclick="send('*clear;*status')" class="grow"><pre>clear bed</pre></button>
+                        <button id="clear-bed" onclick="send('*clear;*status')" class="grow"><pre id="clear-verb">clear bed</pre></button>
                         <div class="five"></div>
                         <button onclick="send('M410')" class="grow"><pre>emergency stop</pre></button>
                     </div>
@@ -113,13 +111,13 @@
                         </div>
                         <div class="col">
                             <button onclick="origin_set()">Set Origin</button>
-                            <button onclick="origin_clear()">Clear Origin</button>
-                            <button onclick="send_safe('G0X0Y0;G0Z0')">Goto Origin</button>
+                            <button id="clear-origin" onclick="origin_clear()">Clear Origin</button>
+                            <button onclick="origin_go()">Goto Origin</button>
                         </div>
                         <div class="col">
                             <button onclick="send_safe('M17')">Enable motors</button>
                             <button onclick="send_safe('M18')">Disable motors</button>
-                            <button onclick="center_go()">Goto Center</button>
+                            <button id="go-center" onclick="center_go()">Goto Center</button>
                         </div>
                         <div class="grow"></div>
                     </div>
@@ -148,17 +146,17 @@
                                 <tr>
                                     <td><button onclick="jog('Z',-1)">Z-</button></td>
                                     <td><button onclick="jog('Y',-1)">Y-</button></td>
-                                    <td><button onclick="retract()">E-</button></td>
+                                    <td><button id="e-dn" onclick="retract()">E-</button></td>
                                 </tr>
                                 <tr>
                                     <td><button onclick="jog('X',-1)">X-</button></td>
-                                    <td><button onclick="send_safe('G28;M18')" class="fa fa-home"></button></td>
+                                    <td><button onclick="home_go()"><i class="fa fa-home"></i></button></td>
                                     <td><button onclick="jog('X',1)">X+</button></td>
                                 </tr>
                                 <tr>
                                     <td><button onclick="jog('Z',1)">Z+</button></td>
                                     <td><button onclick="jog('Y',1)">Y+</button></td>
-                                    <td><button onclick="extrude()">E+</button></td>
+                                    <td><button id="e-up" onclick="extrude()">E+</button></td>
                                 </tr>
                             </table>
                         </div>
@@ -235,7 +233,7 @@
                             <button onclick="send_safe('M119')">endstops</button>
                             <button onclick="send_safe('M114')">position</button>
                         </div>
-                        <div class="col">
+                        <div id="ctrl-run-fdm" class="col">
                             <label>Run</label>
                             <button onclick="calibrate_pid()">nozzle pid</button>
                             <button onclick="probe_bed()">bed probe</button>
