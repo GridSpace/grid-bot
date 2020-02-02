@@ -10,17 +10,12 @@ cp /home/pi/grid-bot/bin/root-rc.local /etc/rc.local
 grep ^xserver-allow-tcp=true /etc/lightdm/lightdm.conf || echo xserver-allow-tcp=true >> /etc/lightdm/lightdm.conf
 
 # update pacakges
-[ ! -f ${HOME}/.gb-up ] && \\
-    apt -y update && \\
-    apt -y dist-upgrade && \\
-    touch ${HOME}/.gb-up
+[ ! -f ${HOME}/.gb-up ] && apt -y update && apt -y dist-upgrade && touch ${HOME}/.gb-up
 
 # set timezone
-[ ! -f ${HOME}/.gb-tz ] && \\
-    dpkg-reconfigure tzdata && \\
-    touch ${HOME}/.gb-tz
+[ ! -f ${HOME}/.gb-tz ] && dpkg-reconfigure tzdata && touch ${HOME}/.gb-tz
 
 grep pi-gridbot /etc/hostname || (
-    echo pi-gridbot > /etc/hostname && \\
+    echo pi-gridbot > /etc/hostname
     echo "127.0.0.1 pi-gridbot" >> /etc/hosts
 )

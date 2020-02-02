@@ -4,7 +4,7 @@ export HOME=/home/pi
 export ROOT=${HOME}/grid-bot
 export NODE=${ROOT}/node/bin/node
 export BAUD=250000
-export OPTS='--web --listen --baud=${BAUD} --filedir=${ROOT}/uploads'
+export OPTS='--listen --baud=${BAUD} --filedir=${ROOT}/uploads'
 
 cd ${ROOT}
 while /bin/true; do

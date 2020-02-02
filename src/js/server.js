@@ -43,6 +43,7 @@ const filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
 const webdir = opt.webdir || "src/web";
 const webport = parseInt(opt.web || opt.webport || 4080) || 0;
 const grid = opt.grid || "https://grid.space";
+const mode = opt.mode || "fdm";
 
 const STATES = {
     IDLE: "idle",
@@ -140,6 +141,7 @@ const status = {
         port: webport,          // admin port
         name: os.hostname(),    // device host name for web display
         uuid,
+        mode,                   // device mode: fdm or cnc
         version,                // version of code running
         firm: {                 // firmware version and author
             ver: "?",

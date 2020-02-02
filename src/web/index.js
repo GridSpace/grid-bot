@@ -184,6 +184,7 @@ function probe_bed() {
     if (alert_on_run()) return;
     if (confirm('run bed level probe?')) {
         send('G29 P1');
+        send('G29 T');
         menu_select('comm');
     }
 }

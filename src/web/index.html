@@ -86,7 +86,7 @@
 
                     <div class="grow"></div>
 
-                    <div class="row">
+                    <div class="row homeact">
                         <button id="clear_bed" onclick="send('*clear;*status')" class="grow"><pre>clear bed</pre></button>
                         <div class="five"></div>
                         <button onclick="send('M410')" class="grow"><pre>emergency stop</pre></button>
@@ -117,9 +117,9 @@
                             <button onclick="send_safe('G0X0Y0;G0Z0')">Goto Origin</button>
                         </div>
                         <div class="col">
-                            <button onclick="center_go()">Goto Center</button>
                             <button onclick="send_safe('M17')">Enable motors</button>
                             <button onclick="send_safe('M18')">Disable motors</button>
+                            <button onclick="center_go()">Goto Center</button>
                         </div>
                         <div class="grow"></div>
                     </div>

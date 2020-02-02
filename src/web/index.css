@@ -113,6 +113,8 @@ button {
     padding: 5px;
     width: 739px !important;
     height: 468px !important;
+    min-height: 468px !important;
+    max-height: 468px !important;
 }
 #progress-box {
     position: relative;
@@ -161,6 +163,9 @@ button {
 #page-home input:nth-child(1n+2) {
     margin-bottom: 5px;
 }
+.homeact button {
+    margin-bottom: 0 !important;
+}
 #state {
     text-align: center;
     margin-bottom: 30px;
@@ -175,11 +180,11 @@ button {
 #keypad {
     position: absolute;
     right: 5px;
-    bottom: 80px;
+    bottom: 76px;
     z-index: 100000;
     border: 1px solid #ddd;
     background-color: #f8f8f8;
-    padding: 10px;
+    padding: 8px;
 }
 #keypad button {
     width: 50px;
