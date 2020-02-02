@@ -505,9 +505,6 @@ function status_update(status) {
     if (status.state) {
         $('state').value = status.print.pause ? "paused" : status.state;
     }
-    if (status.device && status.device.name) {
-        document.title = status.device.name;
-    }
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
         $('progress').value = status.print.progress + '%';
@@ -627,8 +624,18 @@ function status_update(status) {
         }
         last_hash = valuehash;
     }
-    if (status.device.mode !== mode) {
-        set_mode(mode = status.device.mode);
+    if (status.device) {
+        if (status.device.name) {
+            document.title = status.device.name;
+        }
+        if (status.device.mode !== mode) {
+            set_mode(mode = status.device.mode);
+        }
+        if (status.device.camera === true) {
+            $('menu-vids').style.display = 'flex';
+        } else {
+            $('menu-vids').style.display = 'none';
+        }
     }
 }
 
@@ -713,7 +720,7 @@ function init() {
         interval = setInterval(() => {
             send('*status');
         }, 1000);
-        send('*list');
+        send('*status;*list');
     };
     sock.onclose = (evt) => {
         log({wss_close: true});

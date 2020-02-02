@@ -163,7 +163,8 @@ const status = {
         close: 0,               // time of last close
         line: 0,                // time of last line output
         lines: 0,               // number of lines recieved from device
-        lineno: 0               // last line # sent
+        lineno: 0,              // last line # sent
+        camera: false
     },
     error: {
         time: 0,                // time of last error
@@ -233,6 +234,14 @@ function mkdir(dir) {
     try {
         fs.mkdirSync(dir);
     } catch (e) { }
+}
+
+function lastmod(file) {
+    try {
+        return fs.statSync(file).mtimeMs;
+    } catch (e) {
+        return 0;
+    }
 }
 
 function cmdlog(line, flags) {
@@ -1250,6 +1259,10 @@ function find_net_address() {
     }
 }
 
+function check_camera() {
+    status.device.camera = lastmod('/var/www/html/camera.jpg') ? true : false;
+}
+
 // look for existing uuid or generate a new one
 function get_set_uuid() {
     try {
@@ -1443,6 +1456,7 @@ function startup() {
     on_serial_port();
     check_file_dir();
     find_net_address();
+    check_camera();
 }
 
 if (!port) {
