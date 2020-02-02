@@ -2,6 +2,14 @@
 #over_voltage=6
 #force_turbo=1
 
+# pi zero ... 10% overclock
+#arm_freq=1100
+#over_voltage=8
+#sdram_freq=500
+#sdram_over_voltage=2
+#force_turbo=1
+#boot_delay=1
+
 # grid:bot ... for pi3 with 7" hdmi touch display
 #max_usb_current=1
 #hdmi_force_hotplug=1

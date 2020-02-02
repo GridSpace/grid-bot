@@ -269,6 +269,13 @@ function nozzle_toggle() {
     }
 }
 
+function preheat() {
+    if (alert_on_run()) return;
+    send(`M104 S${settings.default_nozzle || 220}`);
+    send(`M140 S${settings.default_bed || 65}`);
+    send('M105');
+}
+
 function nozzle_temp() {
     return parseInt($('nozzle_temp').value || '0');
 }
@@ -537,7 +544,6 @@ function status_update(status) {
         if (status.target.bed > 0) {
             if ($('bed_temp') !== input) {
                 $('bed_temp').value = status.target.bed;
-                // $('bed').classList.add('bg_red');
             }
             $('bed_temp').classList.add('bg_red');
             $('bed_toggle').innerText = 'off';

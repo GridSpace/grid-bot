@@ -147,6 +147,9 @@ button {
 #heating input {
     text-align: center;
 }
+#preheat button {
+    width: 180px;
+}
 #page-home button {
     margin-bottom: 5px;
 }
