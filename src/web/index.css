@@ -147,6 +147,11 @@ button {
 #heating input {
     text-align: center;
 }
+#feedscale {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    text-align: center;
+}
 #preheat button {
     width: 180px;
 }

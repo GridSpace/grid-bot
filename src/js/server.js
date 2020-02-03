@@ -173,7 +173,7 @@ const status = {
         line: 0,                // time of last line output
         lines: 0,               // number of lines recieved from device
         lineno: 0,              // last line # sent
-        camera: false
+        camera: false,          // true if camera present
     },
     error: {
         time: 0,                // time of last error
@@ -208,6 +208,7 @@ const status = {
         E: 0,
         rel: false              // relative moves
     },
+    feed: 1,                    // feed scaling
     estop: {                    // endstop status
         min: {},
         max: {}
@@ -760,6 +761,10 @@ function process_input_two(line, channel) {
         bufmax = parseInt(line.substring(5));
         return;
     }
+    // handle feed scaling
+    if (line.indexOf('*feed ') === 0) {
+        return status.feed = parseFloat(line.substring(6));
+    }
     let pretty = undefined;
     switch (line) {
         case "*exit": return process.exit(0);
@@ -1139,6 +1144,22 @@ function write(line, flags) {
                 // elide 'E' extrude moves when extrusion disabled
                 if (extrude === false) {
                     toks = toks.filter(t => t.charAt(0) !== 'E');
+                }
+                // adjust feed scaling
+                if (status.feed !== 1) {
+                    let scaled = false;
+                    toks = toks.map(tok => {
+                        if (tok.charAt(0) === 'F') {
+                            scaled = true;
+                            let nfeed = parseFloat(tok.substring(1)) * status.feed;
+                            return `F${nfeed}`;
+                        } else {
+                            return tok;
+                        }
+                    });
+                    if (scaled) {
+                        line = toks.join(' ');
+                    }
                 }
                 // extract position from gcode
                 toks.slice(1).forEach(t => {

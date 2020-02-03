@@ -389,6 +389,14 @@ function gr(msg) {
     send(`G91; G0 ${msg}; G90`);
 }
 
+function feed_dn() {
+    send(`*feed ${last_set.feed - 0.05}; *status`);
+}
+
+function feed_up() {
+    send(`*feed ${last_set.feed + 0.05}; *status`);
+}
+
 function send_confirm(message, what) {
     what = what || `send ${message}`;
     if (confirm(`${what}?`)) {
@@ -643,6 +651,9 @@ function status_update(status) {
             $('menu-vids').style.display = 'none';
         }
     }
+    if (status.feed && input !== $('feedscale')) {
+        $('feedscale').value = `${Math.round(status.feed * 100)}%`;
+    }
 }
 
 function set_mode(mode) {
@@ -657,7 +668,8 @@ function set_mode(mode) {
 function set_mode_cnc() {
     // home
     $('heating').style.display = 'none';
-    $('print-spacer').style.display = 'none';
+    $('feedrate').style.display = '';
+    // $('print-spacer').style.display = 'none';
     $('clear-verb').innerText = 'clear build area';
     // move
     $('clear-origin').style.display = 'none';
@@ -677,7 +689,8 @@ function set_mode_cnc() {
 function set_mode_fdm() {
     // home
     $('heating').style.display = '';
-    $('print-spacer').style.display = '';
+    $('feedrate').style.display = 'none';
+    // $('print-spacer').style.display = '';
     $('clear-verb').innerText = 'clear bed';
     // move
     $('clear-origin').style.display = '';
@@ -799,6 +812,19 @@ function init() {
             send('M105');
             $('nozzle_toggle').innerText = 'off';
             input_deselect();
+        }
+    };
+    $('feedscale').onclick = ev => {
+        input = $('feedscale');
+        input.classList.add('bg_green');
+        ev.stopPropagation();
+    };
+    $('feedscale').onkeyup = ev => {
+        if (ev.keyCode === 13) {
+            let val = $('feedscale').value.replace('%','').trim();
+            val = Math.min(2,Math.max(0.1,parseInt(val) / 100.0));
+            input_deselect();
+            send(`*feed ${val}; *status`);
         }
     };
     $('send').onclick = $('command').onkeyup = ev => {
