@@ -1311,7 +1311,7 @@ function runbox(filename, feed) {
             });
             let start_x = status.pos.X;
             let start_y = status.pos.Y;
-            queue(`G1 X${min.x} Y${min.y}`);
+            queue(`G1 X${min.x} Y${min.y} F${feed||3000}`);
             queue(`G1 X${min.x} Y${max.y}`);
             queue(`G1 X${max.x} Y${max.y}`);
             queue(`G1 X${max.x} Y${min.y}`);
