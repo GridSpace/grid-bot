@@ -325,9 +325,9 @@ function firmware_update(file) {
     }
 }
 
-function controller_update() {
+function controller_restart() {
     if (alert_on_run()) return;
-    if (confirm("update controller?")) {
+    if (confirm("restart controller?")) {
         send('*exit');
     }
 }
