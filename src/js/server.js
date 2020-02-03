@@ -864,6 +864,14 @@ function process_input_two(line, channel) {
         kick_named(path.join(filedir, file));
     } else if (line.indexOf("*send ") === 0) {
         send_file(line.substring(6));
+    } else if (line.charAt(0) === '!') {
+        let ecmd = line.substring(1);
+        if (sport) {
+            sport.write(`${ecmd}\n`);
+            evtlog(`emergency command issued: ${ecmd}`);
+        } else {
+            evtlog(`missing port for emergency command: ${ecmd}`);
+        }
     } else if (line.charAt(0) !== "*") {
         queue_priority(line, channel);
     } else {
