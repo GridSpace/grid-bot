@@ -49,6 +49,7 @@ const STATES = {
     NODEVICE: "no controller",
     CONNECTING: "connecting",
     PRINTING: "printing",
+    MILLING: "milling",
     FLASHING: "flashing"
 };
 
@@ -682,7 +683,7 @@ function send_file(filename) {
     status.print.outdir = filename.substring(0, filename.lastIndexOf(".")) + ".output";
     status.print.outseq = 0;
     status.print.start = Date.now();
-    status.state = STATES.PRINTING;
+    status.state = mode === 'cnc ? STATES.MILLING : STATES.PRINTING;
     evtlog(`print head ${filename}`);
     try {
         let stat = null;
