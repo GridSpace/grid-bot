@@ -184,10 +184,6 @@ button {
     height: 50px;
     margin: 3px;
 }
-#page-move td button {
-    min-width: 50px !important;
-    min-height: 50px !important;
-}
 #page-move td {
     text-align: center;
 }
@@ -199,6 +195,14 @@ button {
 }
 .jog button {
     margin: 3px;
+}
+.jog div div button {
+    padding: 10px !important;
+}
+#jogpad button {
+    font-weight: bold;
+    min-width: 65px;
+    min-height: 65px;
 }
 #page-file > div {
     width: 50%;

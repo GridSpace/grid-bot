@@ -26,7 +26,6 @@ const net = require('net');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const noboot = opt.noboot || false; // do not expect serial boot message
 const oport = opt.device || opt.port || opt._[0]; // serial port device path
 const baud = parseInt(opt.baud || "250000");      // baud rate for serial port
 
@@ -74,6 +73,7 @@ let port = oport;               // default port (possible to probe)
 let checksum = !opt.nocheck;    // use line numbers and checksums
 let lineno = 1;                 // next output line number
 let starting = false;           // output phase just after reset
+let quiescence = false;         // achieved quiescence after serial open
 let waiting = 0;                // unack'd output lines
 let maxout = 0;                 // high water mark for buffer
 let paused = false;             // queue processing paused
@@ -89,14 +89,18 @@ let sport = null;               // bound serial port
 let upload = null;              // name of file being uploaded
 let debug = opt.debug;          // debug and dump all data
 let extrude = true;             // enable / disable extrusion
-let onboot = [                  // commands to run on boot (useful for abort)
+let onboot = mode === 'fdm' ? [ // commands to run on boot
     "M155 S2",          // report temp every 2 seconds
     "M115",             // get firmware info
     "M211",             // get endstop boundaries
     "M119",             // get endstop status
     "M114"              // get position
+] : [
+    "G21",              // metric units
+    "G90",              // absolute moves
+    "G92 X0 Y0 Z0 E0"   // zero out XYZE
 ];
-let boot_abort = [
+let boot_abort = mode === 'fdm' ? [
     "G21",              // metric units
     "G90",              // absolute moves
     "G92 X0 Y0 Z0 E0",  // zero out XYZE
@@ -108,6 +112,11 @@ let boot_abort = [
     "G0 Z10 X0 Y0",     // drop bed 1cm
     "G28 X Y",          // home X & Y
     "G90",              // restore absolute moves
+    "M84"               // disable steppers
+] : [
+    "G21",              // metric units
+    "G90",              // absolute moves
+    "G92 X0 Y0 Z0 E0",  // zero out XYZE
     "M84"               // disable steppers
 ];
 let boot_error = boot_abort.slice();
@@ -301,25 +310,14 @@ function on_serial_port() {
             status.state = STATES.CONNECTING;
             status.print.pause = paused = false;
             lineno = 1;
-            if (noboot) {
-                sport.write('\r\nM110 N0\r\n');
-                sport.flush();
-                onboot.push('M503')
-                on_serial_line('start');
-                on_serial_line('M900 ; forced start');
-                status.device.firm.ver = 'new';
-                status.device.firm.auth = 'new';
-                if (!opt.buflen) {
-                    bufmax = 3;
+            starting = false;
+            quiescence = false;
+            setTimeout(() => {
+                if (status.device.lines === 0) {
+                    evtlog("device not responding. reopening port.");
+                    sport.close();
                 }
-            } else {
-                setTimeout(() => {
-                    if (status.device.lines < 2) {
-                        evtlog("device not responding. reopening port.");
-                        sport.close();
-                    }
-                }, 3000);
-            }
+            }, 3000);
         })
         .on('error', function(error) {
             sport = null;
@@ -339,9 +337,59 @@ function on_serial_port() {
         });
 }
 
+let wait_quiesce = null;
+let wait_counter = 0;
+let wait_time = 10000;
+
+function quiescence_waiter() {
+    clearTimeout(wait_quiesce);
+    if (status.device.lines === wait_counter) {
+        wait_quiesce = null;
+        quiescence = true;
+        on_quiescence();
+    } else {
+        wait_counter = status.device.lines;
+        wait_quiesce = setTimeout(quiescence_waiter, 1000);
+    }
+}
+
+// perform boot sequence upon quiescence
+function on_quiescence() {
+    if (starting) {
+        collect = [];
+        starting = false;
+        status.state = STATES.IDLE;
+        evtlog("device ready");
+    } else {
+        evtlog("bump boot");
+        sport.write('\r\nM110 N0\r\n');
+        sport.flush();
+        onboot.push('M503')
+        on_serial_line('start');
+        status.device.firm.ver = 'new';
+        status.device.firm.auth = 'new';
+        if (!opt.buflen) {
+            bufmax = 3;
+        }
+    }
+    // queue onboot commands
+    onboot.forEach(cmd => {
+        queue(cmd);
+    });
+    onboot = [];
+    // allow remote spooling
+    grid_spool();
+}
+
 // handle a single line of serial input
 function on_serial_line(line) {
-    status.device.lines++;
+    // on first line, setup a quiescence timer
+    if (status.device.lines++ === 0) {
+        wait_counter = status.device.lines;
+        wait_quiesce = setTimeout(quiescence_waiter, 2000);
+    } else if (wait_quiesce) {
+        quiescence_waiter();
+    }
     if (debug) {
         let cmd = (match[0] || {line:''}).line;
         console.log("<... " + (cmd ? cmd + " -- " + line : line));
@@ -378,18 +426,7 @@ function on_serial_line(line) {
             }
         });
     }
-    // look for M900 on a start (new serial connection, 8-bit controllers)
-    if (starting && line.indexOf("M900 ") >= 0) {
-        // look for end of output on newly opened port
-        cmdlog("<-- " + line, {});
-        collect = [];
-        starting = false;
-        if (opt.kick) {
-            process_input("*clearkick");
-        }
-        status.state = STATES.IDLE;
-        evtlog("device ready");
-    } else if (line.indexOf("ok") === 0 || line.indexOf("error:") === 0) {
+    if (line.indexOf("ok") === 0 || line.indexOf("error:") === 0) {
         // match output to an initiating command (from a queue)
         if (line.indexOf("ok ") === 0 && collect) {
             line = line.substring(3);
@@ -452,20 +489,6 @@ function on_serial_line(line) {
         collect = null;
         match = [];
         buf = [];
-        // set port idle kill if doesn't come up as expected
-        setTimeout(() => {
-            if (starting && status.device.lines === 0) {
-                evtlog("no serial activity detected ... reopening");
-                sport.close();
-            }
-        }, 5000);
-        // queue onboot commands
-        onboot.forEach(cmd => {
-            queue(cmd);
-        });
-        onboot = [];
-        // allow remote spooling
-        grid_spool();
     }
     // parse M114 x/y/z/e positions
     if (line.indexOf("X:") === 0) {
