@@ -212,10 +212,18 @@ button {
 #page-file > div {
     width: 50%;
 }
-#file-list-wrap, #file-detail {
+#file-list-wrap {
     overflow-y: auto;
     margin: 10px 0 10px 10px;
     background: #fafafa;
+}
+#file-detail {
+    overflow-y: auto;
+    margin: 10px 10px 10px 10px;
+    background: #fafafa;
+}
+#file-detail button {
+    margin: 0 10px 5px 10px;
 }
 #file-list {
     font-family: monospace;

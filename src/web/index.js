@@ -82,15 +82,29 @@ function shutdown() {
     }
 }
 
+function runbox() {
+    if (selected && selected.ext === 'g') {
+        if (confirm(`run boundary for "${selected.file}" @ ${jog_speed} mm/s`)) {
+            send(`*runbox ${selected.file} @ ${jog_speed}`);
+        }
+    } else {
+        alert('no gcode file selected');
+    }
+}
+
 function print_selected() {
     if (selected) {
         print(selected.file, selected.ext);
+    } else {
+        alert('no gcode file selected');
     }
 }
 
 function delete_selected() {
     if (selected) {
         remove(selected.file);
+    } else {
+        alert('no gcode file selected');
     }
 }
 
@@ -677,11 +691,12 @@ function set_mode_cnc() {
     $('e-up').innerText = 'Z+';
     $('e-dn').innerText = 'Z-';
     // files
-    run_verb = 'execute';
+    run_verb = 'run gcode';
     let filego = $('file-go');
     if (filego.innerText !== 'install') {
         filego.innerText = run_verb;
     }
+    $('file-box').style.display = '';
     // control
     $('ctrl-run-fdm').style.display = 'none';
 }
@@ -703,6 +718,7 @@ function set_mode_fdm() {
     if (filego.innerText !== 'install') {
         filego.innerText = run_verb;
     }
+    $('file-box').style.display = 'none';
     // control
     $('ctrl-run-fdm').style.display = '';
 }

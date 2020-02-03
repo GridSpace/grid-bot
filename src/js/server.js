@@ -867,6 +867,16 @@ function process_input_two(line, channel) {
             file += ".gcode";
         }
         kick_named(path.join(filedir, file));
+    } else if (line.indexOf("*runbox ") === 0) {
+        if (status.print.run) {
+            return evtlog("job in progress", {channel});
+        }
+        let opt = line.substring(8).split('@').map(v => v.trim());
+        let file = opt[0];
+        if (file.indexOf(".gcode") < 0) {
+            file += ".gcode";
+        }
+        runbox(path.join(filedir, file), parseInt(opt[1] || 3000));
     } else if (line.indexOf("*send ") === 0) {
         send_file(line.substring(6));
     } else if (line.charAt(0) === '!') {
@@ -1257,8 +1267,60 @@ function check_file_dir(once) {
     }
 };
 
-function kick_named(name) {
-    send_file(name);
+function kick_named(filename) {
+    send_file(filename);
+}
+
+function runbox(filename, feed) {
+    try {
+        let min = { x: Infinity, y: Infinity };
+        let max = { x: -Infinity, y: -Infinity };
+        let pos = { x: 0, y: 0 };
+        let abs = true;
+        fs.readFileSync(filename)
+            .toString()
+            .split("\n")
+            .forEach(line => {
+                let toks = tokenize_line(line);
+                if (toks[0] === 'G0' || toks[0] === 'G1') {
+                    let x = pos.x;
+                    let y = pos.y;
+                    toks.forEach(tok => {
+                        if (tok.charAt(0) === 'X') {
+                            x = parseFloat(tok.substring(1));
+                        } else if (tok.charAt(0) === 'Y') {
+                            y = parseFloat(tok.substring(1));
+                        }
+                    });
+                    if (abs) {
+                        pos.x = x;
+                        pos.y = y;
+                    } else {
+                        pos.x += x;
+                        pos.y += y;
+                    }
+                    min.x = Math.min(min.x, pos.x);
+                    max.x = Math.max(max.x, pos.x);
+                    min.y = Math.min(min.y, pos.y);
+                    max.y = Math.max(max.y, pos.y);
+                } else if (toks[0] === 'G90') {
+                    abs = true;
+                } else if (toks[0] === 'G91') {
+                    abs = false;
+                }
+            });
+            console.log({min, max, pos, abs});
+            // find closest corner and start there?
+            queue(`G1 X${min.x} Y${min.y}`);
+            queue(`G1 X${min.x} Y${max.y}`);
+            queue(`G1 X${max.x} Y${max.y}`);
+            queue(`G1 X${max.x} Y${min.y}`);
+            queue(`G1 X${min.x} Y${min.y}`);
+            queue(`G1 X${status.pos.X} Y${status.pos.Y}`);
+    } catch (e) {
+        evtlog(`runbox error: ${e}`);
+        console.log(e);
+    }
 }
 
 function kick_next() {
