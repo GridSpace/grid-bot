@@ -411,6 +411,10 @@ function feed_up() {
     send(`*feed ${last_set.feed + 0.05}; *status`);
 }
 
+function feed_reset() {
+    send(`*feed 1.0; *status`);
+}
+
 function send_confirm(message, what) {
     what = what || `send ${message}`;
     if (confirm(`${what}?`)) {
