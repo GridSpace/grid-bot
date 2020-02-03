@@ -314,8 +314,13 @@ function on_serial_port() {
             quiescence = false;
             setTimeout(() => {
                 if (status.device.lines === 0) {
-                    evtlog("device not responding. reopening port.");
-                    sport.close();
+                    if (opt.idleok) {
+                        evtlog("device input timeout");
+                        on_quiescence();
+                    } else {
+                        evtlog("device not responding. reopening port.");
+                        sport.close();
+                    }
                 }
             }, 3000);
         })
