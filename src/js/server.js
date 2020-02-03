@@ -1309,14 +1309,14 @@ function runbox(filename, feed) {
                     abs = false;
                 }
             });
-            console.log({min, max, pos, abs});
-            // find closest corner and start there?
+            let start_x = status.pos.X;
+            let start_y = status.pos.Y;
             queue(`G1 X${min.x} Y${min.y}`);
             queue(`G1 X${min.x} Y${max.y}`);
             queue(`G1 X${max.x} Y${max.y}`);
             queue(`G1 X${max.x} Y${min.y}`);
             queue(`G1 X${min.x} Y${min.y}`);
-            queue(`G1 X${status.pos.X} Y${status.pos.Y}`);
+            queue(`G1 X${start_x} Y${start_y}`);
     } catch (e) {
         evtlog(`runbox error: ${e}`);
         console.log(e);
