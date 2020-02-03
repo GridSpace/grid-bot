@@ -1428,7 +1428,9 @@ function grid_spool() {
                     console.log({file, gcode: gcode.length});
                     fs.writeFile(path.join(filedir, file), gcode, () => {
                         check_file_dir(true);
-                        kick_named(path.join(filedir, file));
+                        if (mode !== 'cnc') {
+                            kick_named(path.join(filedir, file));
+                        }
                     });
                 } else {
                     if (body.length > 80) {
