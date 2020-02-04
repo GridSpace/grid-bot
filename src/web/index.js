@@ -34,6 +34,7 @@ let settings = localStorage;
 let selected = null;
 let mode = null;        // for checking against current status
 let run_verb = 'print';
+let job_verb = 'print';
 
 function $(id) {
     return document.getElementById(id);
@@ -54,7 +55,7 @@ function elapsed(millis) {
 
 function alert_on_run() {
     if (last_set.print.run) {
-        alert("print in progress");
+        alert(`${job_verb} in progress`);
         return true;
     }
     return false;
@@ -151,9 +152,10 @@ function print(file, ext) {
     if (ext === "h") {
         return firmware_update(file);
     }
-    if (confirm(`start print "${file}"?`)) {
+    if (confirm(`start ${job_verb} "${file}"?`)) {
         send('*clear');
         send(`*kick ${file}`);
+        menu_select('home');
     }
 }
 
@@ -306,7 +308,7 @@ function filament_unload() {
 
 function print_next() {
     if (alert_on_run()) return;
-    if (confirm(`start next print?`)) {
+    if (confirm(`start next job?`)) {
         send('*clear');
         send('*kick');
     }
@@ -333,19 +335,19 @@ function controller_restart() {
 }
 
 function pause() {
-    if (status && status.print && status.print.run && confirm('pause print job?')) {
+    if (status && status.print && status.print.run && confirm(`pause ${job_verb}?`)) {
         send('*pause');
     }
 }
 
 function resume() {
-    if (status && status.print && status.print.run && confirm('resume print job?')) {
+    if (status && status.print && status.print.run && confirm(`resume ${job_verb}?`)) {
         send('*resume');
     }
 }
 
 function abort() {
-    if (confirm('abort print job?')) {
+    if (confirm(`abort ${job_verb}?`)) {
         send('*abort');
     }
 }
@@ -696,6 +698,7 @@ function set_mode_cnc() {
     $('e-dn').innerText = 'Z-';
     // files
     run_verb = 'run gcode';
+    job_verb = 'milling';
     let filego = $('file-go');
     if (filego.innerText !== 'install') {
         filego.innerText = run_verb;
@@ -718,6 +721,7 @@ function set_mode_fdm() {
     $('e-dn').innerText = 'E-';
     // files
     run_verb = 'print';
+    job_verb = 'print';
     let filego = $('file-go');
     if (filego.innerText !== 'install') {
         filego.innerText = run_verb;

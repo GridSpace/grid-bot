@@ -1157,19 +1157,33 @@ function write(line, flags) {
                     toks = toks.filter(t => t.charAt(0) !== 'E');
                 }
                 // adjust feed scaling
-                if (status.feed !== 1) {
+                if (!status.pos.feed) {
+                    status.pos.feed = status.feed;
+                }
+                let newfeed = status.feed !== status.pos.feed;
+                let realf = null;
+                if (newfeed || status.feed !== 1) {
                     let scaled = false;
                     toks = toks.map(tok => {
                         if (tok.charAt(0) === 'F') {
                             scaled = true;
-                            let nfeed = parseFloat(tok.substring(1)) * status.feed;
+                            realf = parseFloat(tok.substring(1));
+                            let nfeed = Math.round(realf * status.feed);
                             return `F${nfeed}`;
                         } else {
                             return tok;
                         }
                     });
                     if (scaled) {
+                        // line had F and was re-scaled
                         line = toks.join(' ');
+                        status.pos.feed = status.feed;
+                    } else if (status.pos.F && newfeed) {
+                        // line had no F, so we synthesize one
+                        toks.push(`F${Math.round(status.pos.F * status.feed)}`);
+                        line = toks.join(' ');
+                        realf = status.pos.F;
+                        status.pos.feed = status.feed;
                     }
                 }
                 // extract position from gcode
@@ -1186,6 +1200,10 @@ function write(line, flags) {
                         status.print.emit += val;
                     }
                 });
+                // store the real F, not the scaled one
+                if (realf) {
+                    status.pos.F = realf;
+                }
             } else if (toks[0] === 'G90') {
                 status.pos.rel = false;
             } else if (toks[0] === 'G91') {

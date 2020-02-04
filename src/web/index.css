@@ -227,7 +227,7 @@ button {
 }
 #file-list {
     font-family: monospace;
-    background: #fafafa;
+    background: rgba(250,250,250,0.25);
     border-radius: 5px;
 }
 #file-list label {
