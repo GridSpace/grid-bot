@@ -10,7 +10,7 @@
  */
 
 /**
- * TODO cnc requires different onboot, boot_abort, boot_error
+ * TODO cnc requires different onboot, onabort, onerror
  * TODO cnc should ignore bed clear/dirty disposition
  * TODO
  */
@@ -101,7 +101,7 @@ let onboot = mode === 'fdm' ? [ // commands to run on boot
     "G90",              // absolute moves
     "G92 X0 Y0 Z0 E0"   // zero out XYZE
 ];
-let boot_abort = mode === 'fdm' ? [
+let onabort = mode === 'fdm' ? [
     "G21",              // metric units
     "G90",              // absolute moves
     "G92 X0 Y0 Z0 E0",  // zero out XYZE
@@ -120,7 +120,13 @@ let boot_abort = mode === 'fdm' ? [
     "G92 X0 Y0 Z0 E0",  // zero out XYZE
     "M84"               // disable steppers
 ];
-let boot_error = boot_abort.slice();
+let onerror = onabort.slice();
+let onpause = [
+    "*pos-push"
+];
+let onresume = [
+    "*pos-pop"
+];
 let uuid = [
     Date.now().toString(36),
     Math.round(Math.random() * 0xffffffff).toString(36),
@@ -207,7 +213,8 @@ const status = {
         Y: 0,
         Z: 0,
         E: 0,
-        rel: false              // relative moves
+        rel: false,             // relative moves
+        stack: []               // saved positions
     },
     feed: 1,                    // feed scaling
     estop: {                    // endstop status
@@ -216,6 +223,31 @@ const status = {
     },
     settings: {}                // map of active settings
 };
+
+function load_config() {
+    try {
+        if (lastmod('etc/server.json')) {
+            let json = JSON.parse(fs.readFileSync('etc/server.json').toString());
+            if (Array.isArray(json.onboot)) {
+                onboot = json.onboot;
+            }
+            if (Array.isArray(json.onabort)) {
+                onabort = json.onabort;
+            }
+            if (Array.isArray(json.onerror)) {
+                onerror = json.onerror;
+            }
+            if (Array.isArray(json.onpause)) {
+                onpause = json.onpause;
+            }
+            if (Array.isArray(json.onresume)) {
+                onresume = json.onresume;
+            }
+        }
+    } catch (e) {
+        console.log({error_reading_config: e});
+    }
+}
 
 // write line to all connected clients
 function emit(line, flags) {
@@ -469,6 +501,11 @@ function on_serial_line(line) {
             }
         }
         status.buffer.waiting = waiting = Math.max(waiting - 1, 0);
+        if (paused && waiting === 0 && on_pause_handler) {
+            let do_handler = on_pause_handler;
+            on_pause_handler = null;
+            do_handler();
+        }
         if (status.update) {
             status.update = false;
         }
@@ -596,7 +633,7 @@ function on_serial_line(line) {
         } else {
             try {
                 sport.close();
-                onboot = boot_error;
+                onboot = onerror;
             } catch (e) { }
             if (opt.fragile) {
                 if (debug) {
@@ -988,7 +1025,7 @@ function abort() {
         return;
     }
     evtlog("print aborted", {error: true});
-    onboot = boot_abort;
+    onboot = onabort;
     // if printing, ensure filament retracts
     if (status.print.run) {
         onboot = onboot.concat(["G1 E20 F300"]);
@@ -1002,7 +1039,15 @@ function pause() {
     }
     evtlog("execution paused", {error: true});
     status.print.pause = paused = true;
+    on_pause_handler = pause_handler;
 };
+
+function pause_handler() {
+    onpause.forEach(cmd => {
+        queue(cmd, {onpause: true, priority: true});
+    });
+    process_queue();
+}
 
 function resume() {
     if (!paused || !check_device_ready()) {
@@ -1010,8 +1055,13 @@ function resume() {
     }
     evtlog("execution resumed", {error: true});
     status.print.pause = paused = false;
+    onresume.forEach(cmd => {
+        queue(cmd, {priority: true});
+    });
     process_queue();
 };
+
+let on_pause_handler = null;
 
 function process_queue() {
     if (processing) {
@@ -1019,6 +1069,14 @@ function process_queue() {
     }
     processing = true;
     while (waiting < bufmax && buf.length && !paused) {
+        if (paused) {
+            // peek to see if next queue entry runs while paused
+            let {line, flags} = buf[0];
+            // exit while if next entry is not pause-runnable
+            if (!flags || !flags.onpause) {
+                break;
+            }
+        }
         let {line, flags} = buf.shift();
         status.buffer.queue = buf.length;
         status.print.mark = Date.now();
@@ -1212,6 +1270,30 @@ function write(line, flags) {
             match.push({line, flags});
             waiting++;
             status.buffer.waiting = waiting;
+            break;
+        case '*': // gridbot reserved
+            switch (line) {
+                case "*pos-push":
+                    status.pos.stack.push({
+                        X: status.pos.X,
+                        Y: status.pos.Y,
+                        Z: status.pos.Z,
+                        F: status.pos.F
+                    });
+console.log({pos_push: status.pos.stack});
+                    return;
+                case "*pos-pop":
+                    let last = status.pos.stack.shift();
+console.log({pos_pop: last});
+                    if (last) {
+                        line = `G0 X${last.X} Y${last.Y} Z${last.Z} F${last.F || 3000}`;
+                    } else {
+                        evtlog(`no saved position on stack to pop`);
+                    }
+                    break;
+                case "*pause":
+                    return pause();
+            }
             break;
     }
     if (sport) {
@@ -1578,6 +1660,7 @@ if (webport > 0) {
 }
 
 function startup() {
+    load_config();
     console.log({
         uuid,
         files: filedir,
