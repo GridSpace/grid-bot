@@ -1,5 +1,8 @@
-software interface for [gridbot](https://cad.onshape.com/documents/2d8590d043bdf723a59cada6/w/45fdeba6779341134e42cdd8/e/c2f0e9fb6c1334edc2ec95b7), a core-xy 3d printer
+software interface for [gridbot](https://cad.onshape.com/documents/64a8b0664bd09cbffb0e0d17/w/044a002e53008b3bc2a845ec/e/9b8b7abe5b303b24f2f26d14) and other 3D printers or CNC mills.
 
 from a fresh install of raspbian desktop, as user ```pi``` run this command:
 
 ```curl https://raw.githubusercontent.com/GridSpace/grid-bot/master/setup.sh | bash```
+
+![GridBot Home](https://grid.space/img/gridbot-home.jpg)
+![GridBot Move](https://grid.space/img/gridbot-move.jpg)
