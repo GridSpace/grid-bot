@@ -1097,7 +1097,7 @@ function process_queue() {
         return;
     }
     processing = true;
-    while (waiting < bufmax && buf.length && !paused) {
+    while (waiting < bufmax && buf.length && !paused && !cancel) {
         if (paused) {
             // peek to see if next queue entry runs while paused
             let {line, flags} = buf[0];
@@ -1111,7 +1111,7 @@ function process_queue() {
         status.print.mark = Date.now();
         write(line,flags);
     }
-    if (buf.length === 0) {
+    if (cancel || buf.length === 0) {
         maxout = 0;
         if (status.print.run) {
             status.print.end = Date.now();
