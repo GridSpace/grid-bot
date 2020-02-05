@@ -38,7 +38,7 @@
                             <div class="row">
                                 <button id="pause" class="grow" onclick="pause()">Pause</button>
                                 <button id="resume" class="grow" onclick="resume()">Resume</button>
-                                <button id="abort" class="grow" onclick="abort()">Abort</button>
+                                <button id="cancel" class="grow" onclick="cancel()">Cancel</button>
                             </div>
                         </div>
                         <div id="print-spacer" class="grow"></div>
@@ -98,7 +98,7 @@
                     <div class="row homeact">
                         <button id="clear-bed" onclick="send('*clear;*status')" class="grow"><pre id="clear-verb">clear bed</pre></button>
                         <div class="five"></div>
-                        <button onclick="send('!M410')" class="grow"><pre>emergency stop</pre></button>
+                        <button onclick="estop()" class="grow"><pre>emergency stop</pre></button>
                     </div>
                 </div>
 

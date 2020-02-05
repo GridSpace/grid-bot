@@ -339,9 +339,9 @@ function pause() {
     if (!last_set.print) return;
     if (!last_set.print.run) return;
     if (last_set.print.pause) return;
-    if (confirm(`pause ${job_verb}?`)) {
+    // if (confirm(`pause ${job_verb}?`)) {
         send('*pause');
-    }
+    // }
 }
 
 function resume() {
@@ -354,10 +354,15 @@ function resume() {
     }
 }
 
-function abort() {
-    if (confirm(`abort ${job_verb}?`)) {
-        send('*abort');
+function cancel() {
+    if (confirm(`cancel ${job_verb}?`)) {
+        send('*cancel');
     }
+}
+
+function estop() {
+    send('!M410');
+    send('*abort');
 }
 
 function extrude(v) {
@@ -547,10 +552,16 @@ function menu_select(key) {
 function status_update(status) {
     if (status.state) {
         let state = status.state;
-        if (status.print.pause) {
-            state = `${state} (paused)`;
-        }
-        if (status.print.abort) {
+        let pause = status.print.pause;
+        if (pause) {
+            if (typeof(pause) === 'string') {
+                state = `${state} (paused ${pause})`;
+            } else {
+                state = `${state} (paused)`;
+            }
+        } else if (status.print.cancel) {
+            state = `${state} (cancelled)`;
+        } else if (status.print.abort) {
             state = `${state} (aborted)`;
         }
         $('state').value = state;

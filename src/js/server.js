@@ -80,6 +80,7 @@ let waiting = 0;                // unack'd output lines
 let maxout = 0;                 // high water mark for buffer
 let paused = false;             // queue processing paused
 let processing = false;         // queue being drained
+let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
 let dircache = [];              // cache of files in watched directory
@@ -191,6 +192,7 @@ const status = {
         run: false,             // print running
         pause: false,           // true if paused
         abort: false,           // true if aborted
+        cancel: false,          // true if cancelled
         clear: false,           // bed is clear to print
         filename: null,         // current file name
         outdir: null,           // output of current print (images)
@@ -715,8 +717,9 @@ function send_file(filename) {
         return evtlog("invalid file: empty", {error: true});
     }
     status.print.run = true;
-    status.print.pause = false;
     status.print.abort = false;
+    status.print.pause = paused =false;
+    status.print.cancel = cancel = false;
     status.print.filename = filename;
     status.print.outdir = filename.substring(0, filename.lastIndexOf(".")) + ".output";
     status.print.outseq = 0;
@@ -830,9 +833,9 @@ function process_input_two(line, channel) {
             }
             return kick_next();
         case "*update": return update_firmware();
-        case "*abort": return abort();
-        case "*pause": return pause();
-        case "*resume": return resume();
+        case "*cancel": return job_cancel();
+        case "*abort": return job_abort();
+        case "*resume": return job_resume();
         case "*clear":
             bed_clear();
             return evtlog("bed marked clear");
@@ -859,6 +862,10 @@ function process_input_two(line, channel) {
             }
             return send_status(pretty);
             // return evtlog(JSON.stringify(status,undefined,pretty), {status: true});
+    }
+    if (line === '*pause' || line.indexOf('*pause ') === 0) {
+        line = line.split(' ');
+        return job_pause(line[1]);
     }
     if (line.indexOf("*update ") === 0) {
         let file = line.substring(8);
@@ -1021,7 +1028,16 @@ function check_device_ready() {
     return true;
 }
 
-function abort() {
+function job_cancel() {
+    if (!check_device_ready()) {
+        return;
+    }
+    evtlog("job cancelled");
+    status.print.cancel = cancel = true;
+    buf = [];
+}
+
+function job_abort() {
     if (!check_device_ready()) {
         return;
     }
@@ -1037,12 +1053,16 @@ function abort() {
     sport.close();
 };
 
-function pause() {
+function job_pause(reason) {
     if (paused || !check_device_ready()) {
         return;
     }
-    evtlog("execution paused");
-    status.print.pause = paused = true;
+    if (reason) {
+        evtlog(`execution paused for ${reason}`);
+    } else {
+        evtlog("execution paused");
+    }
+    status.print.pause = paused = reason || true;
     on_pause_handler = pause_handler;
 };
 
@@ -1054,7 +1074,7 @@ function pause_handler() {
     process_queue();
 }
 
-function resume() {
+function job_resume() {
     if (!paused || !check_device_ready()) {
         return;
     }
@@ -1094,7 +1114,9 @@ function process_queue() {
             status.print.run = false;
             status.print.pause = false;
             status.state = STATES.IDLE;
-            if (status.print.abort) {
+            if (status.print.cancel) {
+                evtlog(`job cancelled ${status.print.filename} after ${((status.print.end - status.print.start) / 60000)} min`);
+            } else if (status.print.abort) {
                 evtlog(`job aborted ${status.print.filename} after ${((status.print.end - status.print.start) / 60000)} min`);
             } else {
                 status.print.progress = "100.00";
@@ -1184,7 +1206,7 @@ function write(line, flags) {
         return;
     }
     if (line.indexOf("M2000") === 0) {
-        pause();
+        job_pause();
         return;
     }
     let sci = line.indexOf(";");
@@ -1290,19 +1312,19 @@ function write(line, flags) {
                         Z: status.pos.Z,
                         F: status.pos.F
                     });
-console.log({pos_push: status.pos.stack});
                     return;
                 case "*pos-pop":
                     let last = status.pos.stack.shift();
-console.log({pos_pop: last});
                     if (last) {
                         line = `G0 X${last.X} Y${last.Y} Z${last.Z} F${last.F || 3000}`;
                     } else {
                         evtlog(`no saved position on stack to pop`);
                     }
                     break;
-                case "*pause":
-                    return pause();
+            }
+            if (line === '*pause' || line.indexOf('*pause ') === 0) {
+                line = line.split(' ');
+                return job_pause(line[1]);
             }
             break;
     }
