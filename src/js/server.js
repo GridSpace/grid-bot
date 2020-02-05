@@ -807,6 +807,10 @@ function process_input_two(line, channel) {
     if (line.indexOf('*feed ') === 0) {
         return status.feed = parseFloat(line.substring(6));
     }
+    // debug tokenization
+    if (line.indexOf("*tok ") === 0) {
+        return evtlog(tokenize_line(line.substring(5)).join(','));
+    }
     let pretty = undefined;
     switch (line) {
         case "*exit": return process.exit(0);
@@ -1185,11 +1189,23 @@ function tokenize_line(line) {
     let cur = '';
     for (let i=0; i<line.length; i++) {
         let char = line[i];
-        if (char >= 'A' && char <= 'Z') {
-            if (cur.length > 0) {
-                toks.push(cur);
+        let upper = (char >= 'A' && char <= 'Z');
+        let lower = (char >= 'a' && char <= 'z');
+        let space = char === ' ';
+        if (upper || lower || space) {
+            if (upper) {
+                if (cur.length > 0) {
+                    toks.push(cur);
+                }
+                cur = char;
+            } else if (lower) {
+                cur += char;
+            } else if (space) {
+                if (cur.length > 0) {
+                    toks.push(cur);
+                }
+                cur = '';
             }
-            cur = char;
         } else if ((char >= '0' && char <= '9') || char === '.' || char === '-') {
             cur += char;
         }
