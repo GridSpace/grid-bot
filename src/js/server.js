@@ -1205,10 +1205,6 @@ function write(line, flags) {
         console.trace("missing line", line, flags);
         return;
     }
-    if (line.indexOf("M2000") === 0) {
-        job_pause();
-        return;
-    }
     let sci = line.indexOf(";");
     if (sci > 0) {
         line = line.substring(0, sci).trim();
@@ -1298,6 +1294,8 @@ function write(line, flags) {
                 status.pos.rel = false;
             } else if (toks[0] === 'G91') {
                 status.pos.rel = true;
+            } else if (toks[0] === 'M0' || toks[0] === 'M1' || toks[0] === 'M2000') {
+                return job_pause(toks[1]);
             }
             match.push({line, flags});
             waiting++;
