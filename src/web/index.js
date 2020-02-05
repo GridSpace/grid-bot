@@ -54,7 +54,7 @@ function elapsed(millis) {
 }
 
 function alert_on_run() {
-    if (last_set.print.run) {
+    if (last_set.print.run && !last_set.print.pause) {
         alert(`${job_verb} in progress`);
         return true;
     }
@@ -335,13 +335,21 @@ function controller_restart() {
 }
 
 function pause() {
-    if (status && status.print && status.print.run && confirm(`pause ${job_verb}?`)) {
+    if (!last_set) return;
+    if (!last_set.print) return;
+    if (!last_set.print.run) return;
+    if (last_set.print.pause) return;
+    if (confirm(`pause ${job_verb}?`)) {
         send('*pause');
     }
 }
 
 function resume() {
-    if (status && status.print && status.print.run && confirm(`resume ${job_verb}?`)) {
+    if (!last_set) return;
+    if (!last_set.print) return;
+    if (!last_set.print.run) return;
+    if (!last_set.print.pause) return;
+    if (confirm(`resume ${job_verb}?`)) {
         send('*resume');
     }
 }
@@ -538,7 +546,14 @@ function menu_select(key) {
 
 function status_update(status) {
     if (status.state) {
-        $('state').value = status.print.pause ? "paused" : status.state;
+        let state = status.state;
+        if (status.print.pause) {
+            state = `${state} (paused)`;
+        }
+        if (status.print.abort) {
+            state = `${state} (aborted)`;
+        }
+        $('state').value = state;
     }
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
@@ -546,9 +561,10 @@ function status_update(status) {
         let brec = $('body').getBoundingClientRect();
         let rect = $('progress').getBoundingClientRect();
         let pbar = $('progress-bar');
+        let pval = status.print.run ? rect.width * (status.print.progress/100) : 0;
         pbar.style.top = `${rect.y - brec.y}px`;
         pbar.style.left = `${rect.x - brec.x}px`;
-        pbar.style.width = `${rect.width * (status.print.progress/100)}px`;
+        pbar.style.width = `${pval}px`;
         pbar.style.height = `${rect.height}px`;
         if (status.print.clear) {
             $('clear-bed').classList.remove('bg_red');

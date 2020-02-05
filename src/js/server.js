@@ -69,7 +69,8 @@ const MCODE = {
     M914: "stallguard_threshold"
 };
 
-let bufmax = parseInt(opt.buflen || "8"); // max unack'd output lines
+let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
+let bufmax = bufdefault;        // max unack'd output lines
 let port = oport;               // default port (possible to probe)
 let checksum = !opt.nocheck;    // use line numbers and checksums
 let lineno = 1;                 // next output line number
@@ -189,6 +190,7 @@ const status = {
     print: {
         run: false,             // print running
         pause: false,           // true if paused
+        abort: false,           // true if aborted
         clear: false,           // bed is clear to print
         filename: null,         // current file name
         outdir: null,           // output of current print (images)
@@ -407,9 +409,6 @@ function on_quiescence() {
         on_serial_line('start');
         status.device.firm.ver = 'new';
         status.device.firm.auth = 'new';
-        if (!opt.buflen) {
-            bufmax = 3;
-        }
     }
     // queue onboot commands
     onboot.forEach(cmd => {
@@ -536,7 +535,7 @@ function on_serial_line(line) {
     }
     // parse M114 x/y/z/e positions
     if (line.indexOf("X:") === 0) {
-        let pos = status.pos = {};
+        let pos = status.pos = { stack:[] };
         let done = false;
         line.split(' ').forEach(tok => {
             if (done) {
@@ -716,12 +715,14 @@ function send_file(filename) {
         return evtlog("invalid file: empty", {error: true});
     }
     status.print.run = true;
+    status.print.pause = false;
+    status.print.abort = false;
     status.print.filename = filename;
     status.print.outdir = filename.substring(0, filename.lastIndexOf(".")) + ".output";
     status.print.outseq = 0;
     status.print.start = Date.now();
     status.state = mode === 'cnc' ? STATES.MILLING : STATES.PRINTING;
-    evtlog(`print head ${filename}`);
+    evtlog(`job head ${filename}`);
     try {
         let stat = null;
         try {
@@ -825,7 +826,7 @@ function process_input_two(line, channel) {
             bed_clear();
         case "*kick":
             if (status.print.run) {
-                return evtlog("print in progress");
+                return evtlog("job in progress");
             }
             return kick_next();
         case "*update": return update_firmware();
@@ -898,7 +899,7 @@ function process_input_two(line, channel) {
         });
     } else if (line.indexOf("*kick ") === 0) {
         if (status.print.run) {
-            return evtlog("print in progress", {channel});
+            return evtlog("job in progress", {channel});
         }
         let file = line.substring(6);
         if (file.indexOf(".gcode") < 0) {
@@ -1024,25 +1025,29 @@ function abort() {
     if (!check_device_ready()) {
         return;
     }
-    evtlog("print aborted", {error: true});
+    evtlog("job aborted", {error: true});
     onboot = onabort;
+    status.print.pause = false;
+    status.print.abort = true;
     // if printing, ensure filament retracts
-    if (status.print.run) {
+    if (status.print.run && mode === 'fdm') {
         onboot = onboot.concat(["G1 E20 F300"]);
     }
-    sport.close(); // forces re-init of marlin
+    // forces re-init of marlin and onboot script to run
+    sport.close();
 };
 
 function pause() {
     if (paused || !check_device_ready()) {
         return;
     }
-    evtlog("execution paused", {error: true});
+    evtlog("execution paused");
     status.print.pause = paused = true;
     on_pause_handler = pause_handler;
 };
 
 function pause_handler() {
+    evtlog("executing pause handler");
     onpause.forEach(cmd => {
         queue(cmd, {onpause: true, priority: true});
     });
@@ -1053,7 +1058,7 @@ function resume() {
     if (!paused || !check_device_ready()) {
         return;
     }
-    evtlog("execution resumed", {error: true});
+    evtlog("execution resumed");
     status.print.pause = paused = false;
     onresume.forEach(cmd => {
         queue(cmd, {priority: true});
@@ -1087,13 +1092,18 @@ function process_queue() {
         if (status.print.run) {
             status.print.end = Date.now();
             status.print.run = false;
-            status.print.progress = "100.00";
+            status.print.pause = false;
             status.state = STATES.IDLE;
+            if (status.print.abort) {
+                evtlog(`job aborted ${status.print.filename} after ${((status.print.end - status.print.start) / 60000)} min`);
+            } else {
+                status.print.progress = "100.00";
+                evtlog(`job done ${status.print.filename} in ${((status.print.end - status.print.start) / 60000)} min`);
+            }
             let fn = status.print.filename;
             let lp = fn.lastIndexOf(".");
             fn = `${fn.substring(0,lp)}.print`;
             fs.writeFileSync(fn, JSON.stringify(status.print));
-            evtlog(`print done ${status.print.filename} in ${((status.print.end - status.print.start) / 60000)} min`);
         }
     } else {
         if (status.print.run) {
@@ -1203,7 +1213,7 @@ function write(line, flags) {
                     bed_dirty();
                     status.print.prep = status.print.start;
                     status.print.start = Date.now();
-                    evtlog(`print body ${status.print.filename}`);
+                    evtlog(`job body ${status.print.filename}`);
                 };
             }
         case 'G':
