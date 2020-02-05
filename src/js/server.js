@@ -1234,7 +1234,6 @@ function write(line, flags) {
             line = line.split(' ');
             return job_pause(line[1]);
         }
-        break;
     }
     switch (line.charAt(0)) {
         case ';':
