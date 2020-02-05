@@ -1210,6 +1210,32 @@ function write(line, flags) {
         line = line.substring(0, sci).trim();
     }
     flags = flags || {};
+    // handle push/pop
+    if (line.charAt(0) === '*') {
+        switch (line) {
+            case "*pos-push":
+                status.pos.stack.push({
+                    X: status.pos.X,
+                    Y: status.pos.Y,
+                    Z: status.pos.Z,
+                    F: status.pos.F
+                });
+                return;
+            case "*pos-pop":
+                let last = status.pos.stack.shift();
+                if (last) {
+                    line = `G0 X${last.X} Y${last.Y} Z${last.Z} F${last.F || 3000}`;
+                } else {
+                    evtlog(`no saved position on stack to pop`);
+                }
+                break;
+        }
+        if (line === '*pause' || line.indexOf('*pause ') === 0) {
+            line = line.split(' ');
+            return job_pause(line[1]);
+        }
+        break;
+    }
     switch (line.charAt(0)) {
         case ';':
             // layer change. capture picture
@@ -1221,8 +1247,8 @@ function write(line, flags) {
                     err => {});
             }
             return;
-        case '$': // grbl
-        case '?': // grbl
+        case '$': // grbl settings
+        case '?': // grbl position
         case '~': // grbl resume
         case 'M':
             // consume & report M117 Start
@@ -1300,30 +1326,6 @@ function write(line, flags) {
             match.push({line, flags});
             waiting++;
             status.buffer.waiting = waiting;
-            break;
-        case '*': // gridbot reserved
-            switch (line) {
-                case "*pos-push":
-                    status.pos.stack.push({
-                        X: status.pos.X,
-                        Y: status.pos.Y,
-                        Z: status.pos.Z,
-                        F: status.pos.F
-                    });
-                    return;
-                case "*pos-pop":
-                    let last = status.pos.stack.shift();
-                    if (last) {
-                        line = `G0 X${last.X} Y${last.Y} Z${last.Z} F${last.F || 3000}`;
-                    } else {
-                        evtlog(`no saved position on stack to pop`);
-                    }
-                    break;
-            }
-            if (line === '*pause' || line.indexOf('*pause ') === 0) {
-                line = line.split(' ');
-                return job_pause(line[1]);
-            }
             break;
     }
     if (sport) {
