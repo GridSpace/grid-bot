@@ -719,6 +719,7 @@ function set_mode_cnc() {
     // $('print-spacer').style.display = 'none';
     $('clear-verb').innerText = 'clear build area';
     // move
+    $('zeros').style.display = '';
     $('clear-origin').style.display = 'none';
     $('go-center').style.display = 'none';
     $('e-up').innerText = 'Z+';
@@ -742,6 +743,7 @@ function set_mode_fdm() {
     // $('print-spacer').style.display = '';
     $('clear-verb').innerText = 'clear bed';
     // move
+    $('zeros').style.display = 'none';
     $('clear-origin').style.display = '';
     $('go-center').style.display = '';
     $('e-up').innerText = 'E+';
