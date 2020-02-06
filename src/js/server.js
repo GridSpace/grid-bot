@@ -411,6 +411,9 @@ function on_quiescence() {
         on_serial_line('start');
         status.device.firm.ver = 'new';
         status.device.firm.auth = 'new';
+        // request info and new quiescence
+        starting = true;
+        quiescence_waiter();
     }
     // queue onboot commands
     onboot.forEach(cmd => {
