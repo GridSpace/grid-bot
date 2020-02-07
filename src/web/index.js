@@ -1,3 +1,6 @@
+/** Copyright Stewart Allen <so@a3z.co> -- All Rights Reserved */
+"use strict";
+
 const MCODE = {
     M92:  "steps per",
     M201: "accel max",
@@ -687,7 +690,8 @@ function status_update(status) {
     }
     if (status.device) {
         if (status.device.name) {
-            document.title = status.device.name;
+            let name = status.device.name.split('.')[0] || 'GridBot';
+            document.title = `${name}`;;
         }
         if (status.device.mode !== mode) {
             set_mode(mode = status.device.mode);

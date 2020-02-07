@@ -10,12 +10,10 @@
  */
 
 /**
- * TODO cnc requires different onboot, onabort, onerror
- * TODO cnc should ignore bed clear/dirty disposition
  * TODO
  */
 
-const version = "Serial [013]";
+const version = "Serial [014]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -350,15 +348,20 @@ function on_serial_port() {
             lineno = 1;
             starting = false;
             quiescence = false;
+            // wait up to 3 seconds on new open for device input.
+            // if no input received, call on_quiescence() which causes
+            // a "bump boot". wait up to 3 more seconds and if no input
+            // then close the port which will re-start the whole cycle.
             setTimeout(() => {
                 if (status.device.lines === 0) {
-                    if (opt.idleok) {
-                        evtlog("device input timeout");
-                        on_quiescence();
-                    } else {
-                        evtlog("device not responding. reopening port.");
-                        sport.close();
-                    }
+                    evtlog("device input timeout");
+                    on_quiescence();
+                    setTimeout(() => {
+                        if (status.device.lines === 0) {
+                            evtlog("device not responding. reopening port.");
+                            sport.close();
+                        }
+                    }, 3000);
                 }
             }, 3000);
         })
