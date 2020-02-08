@@ -21,7 +21,6 @@ export ROOT="${HOME}/grid-bot"
 # update grid-bot
 cd "${ROOT}"
 git pull
-npm i
 
 # uploads dir, remove legacy port link
 cd ${ROOT}
@@ -58,6 +57,10 @@ grep node ${HOME}/.bashrc || {
 
 # make sure npm will work
 export PATH=${PATH}:${ROOT}/node/bin
+
+# update grid-bot post-node install (to get npm)
+cd ${ROOT}
+npm i
 
 # install grid-host
 [ ! -d "${HOME}/grid-host" ] && {
