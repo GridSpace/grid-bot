@@ -2,14 +2,6 @@
 #over_voltage=6
 #force_turbo=1
 
-# grid:bot ... pi zero 10% overclock
-#arm_freq=1100
-#over_voltage=8
-#sdram_freq=500
-#sdram_over_voltage=2
-#force_turbo=1
-#boot_delay=1
-
 # grid:bot ... pi 4 hdmi output
 #hdmi_force_hotplug=1
 #hdmi_drive=2
@@ -27,6 +19,9 @@
 # grid:bot ... fir pi3 with element14 7" touch display
 dtoverlay=dwc2
 dtoverlay=gpio-shutdown
+
+# grid:bot ... hide undervoltage warnings
+avoid_warnings=1
 
 # grid:bot ... enable camera, set video mem
 start_x=1
