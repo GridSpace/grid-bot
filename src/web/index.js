@@ -720,14 +720,15 @@ function set_mode_cnc() {
     // home
     $('heating').style.display = 'none';
     $('feedrate').style.display = '';
-    // $('print-spacer').style.display = 'none';
-    $('clear-verb').innerText = 'clear build area';
+    $('clear-bed').style.display = 'none';
     // move
     $('zeros').style.display = '';
     $('clear-origin').style.display = 'none';
     $('go-center').style.display = 'none';
-    $('e-up').innerText = 'Z+';
-    $('e-dn').innerText = 'Z-';
+    $('jog-fdm').style.display = 'none';
+    $('jog-cnc').style.display = '';
+    // mill ops
+    $('menu-mill').style.display = '';
     // files
     run_verb = 'run gcode';
     job_verb = 'milling';
@@ -744,14 +745,15 @@ function set_mode_fdm() {
     // home
     $('heating').style.display = '';
     $('feedrate').style.display = 'none';
-    // $('print-spacer').style.display = '';
-    $('clear-verb').innerText = 'clear bed';
+    $('clear-bed').style.display = '';
     // move
     $('zeros').style.display = 'none';
     $('clear-origin').style.display = '';
     $('go-center').style.display = '';
-    $('e-up').innerText = 'E+';
-    $('e-dn').innerText = 'E-';
+    $('jog-fdm').style.display = '';
+    $('jog-cnc').style.display = 'none';
+    // mill ops
+    $('menu-mill').style.display = 'none';
     // files
     run_verb = 'print';
     job_verb = 'print';
@@ -770,6 +772,7 @@ function init() {
         home: $('menu-home'),
         move: $('menu-move'),
         file: $('menu-file'),
+        mill: $('menu-mill'),
         comm: $('menu-comm'),
         vids: $('menu-vids'),
         ctrl: $('menu-ctrl')
@@ -967,6 +970,28 @@ function init() {
         }
         ev.stopPropagation();
     };
+    // bind milling ops
+    let mill_selop = null;
+    let mill_sel = (el, op, target) => {
+        el.style.display = '';
+        op.classList.add('mill-op-select');
+        if (mill_selop && mill_selop.el !== el) {
+            mill_selop.el.style.display = 'none';
+            mill_selop.op.classList.remove('mill-op-select');
+        }
+        mill_selop = { el, op, target };
+    };
+    [...document.getElementsByClassName('mill-op')].forEach(op => {
+        let target = op.getAttribute('target');
+        let el = $(`mill-${target}`);
+        el.style.display = 'none';
+        if (!mill_selop) {
+            mill_sel(el, op, target);
+        }
+        op.onclick = (ev) => {
+            mill_sel(el, op, target);
+        };
+    });
     // reload page on status click
     $('page-home').onclick = ev => {
         if (ev.target.id === 'state') {

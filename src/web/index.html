@@ -12,6 +12,7 @@
                 <div id="menu-home"><i class="fas fa-home"></i></div>
                 <div id="menu-move"><i class="fas fa-expand-arrows-alt"></i></div>
                 <div id="menu-file"><i class="fas fa-file-alt"></i></div>
+                <div id="menu-mill"><i class="fas fa-rainbow"></i></div>
                 <div id="menu-comm"><i class="fas fa-caret-square-right"></i></div>
                 <div id="menu-vids"><i class="fas fa-video"></i></div>
                 <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
@@ -97,7 +98,7 @@
                     <div class="grow"></div>
 
                     <div class="row homeact">
-                        <button id="clear-bed" onclick="send('*clear;*status')" class="grow"><pre id="clear-verb">clear bed</pre></button>
+                        <button id="clear-bed" onclick="send('*clear;*status')" class="grow"><pre>clear bed</pre></button>
                         <div class="five"></div>
                         <button onclick="estop()" class="grow"><pre>emergency stop</pre></button>
                     </div>
@@ -159,7 +160,7 @@
                         <div class="grow"></div>
                         <div id="jogpad" class="col">
                             <label class="text-center">Jog</label>
-                            <table>
+                            <table id="jog-fdm">
                                 <tr>
                                     <td><button onclick="jog('Z',-1)">Z-</button></td>
                                     <td><button onclick="jog('Y',1)">Y+</button></td>
@@ -174,6 +175,23 @@
                                     <td><button onclick="jog('Z',1)">Z+</button></td>
                                     <td><button onclick="jog('Y',-1)">Y-</button></td>
                                     <td><button id="e-up" onclick="extrude()">E+</button></td>
+                                </tr>
+                            </table>
+                            <table id="jog-cnc">
+                                <tr>
+                                    <td><button onclick="jog('Z',1)">Z+</button></td>
+                                    <td><button onclick="jog('Y',1)">Y+</button></td>
+                                    <td><button onclick="jog('Z',1)">Z+</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('X',-1)">X-</button></td>
+                                    <td><button onclick="home_go()"><i class="fa fa-home"></i></button></td>
+                                    <td><button onclick="jog('X',1)">X+</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button onclick="jog('Z',-1)">Z-</button></td>
+                                    <td><button onclick="jog('Y',-1)">Y-</button></td>
+                                    <td><button onclick="jog('Z',-1)">Z-</button></td>
                                 </tr>
                             </table>
                         </div>
@@ -220,6 +238,35 @@
                             <div class="ten"></div>
                             <button onclick="clear_files()">delete all files</button>
                         </div>
+                    </div>
+                </div>
+
+                <div id="page-mill" class="col">
+                    <div class="row text-center">
+                        <div class="grow mill-op" target="facing">facing</div>
+                        <div class="grow mill-op" target="drill">drill</div>
+                        <div class="grow mill-op" target="pocket">pocket</div>
+                    </div>
+                    <div id="mill-facing" class="grow mill-div">
+                        facing
+                    </div>
+                    <div id="mill-drill" class="grow mill-div">
+                        drill
+                    </div>
+                    <div id="mill-pocket" class="grow mill-div">
+                        pocket
+                    </div>
+                    <div id="mill-op-tool" class="row">
+                        <div class="grow"></div>
+                        <label>tool diameter</label>
+                        <input id="mill-tool-diam" size=8></input>
+                        <input type="radio" id="tool-metric" name="tool-type" value="metric">
+                        <label>metric</label>
+                        <input type="radio" id="tool-imperial" name="tool-type" value="imperial">
+                        <label>imperial</label>
+                        <div class="grow"></div>
+                        <button onclick="run_mill_op()">run program</button>
+                        <div class="grow"></div>
                     </div>
                 </div>
 

@@ -85,6 +85,7 @@ button {
     border-right: 1px solid black;
     border-left: 1px solid #ddd;
     border-top: 1px solid #ddd;
+    color: #888;
 }
 #menu > div:hover {
     background-color: #eee;
@@ -99,6 +100,7 @@ button {
     border-left: 1px solid #f4f4f4 !important;
     border-top: 1px solid black !important;
     background-color: #f4f4f4;
+    color: black !important;
 }
 #pages > div {
     display: none;
@@ -203,6 +205,27 @@ button {
 }
 .jog div div button {
     padding: 10px !important;
+}
+.mill-op {
+    color: #888;
+    padding: 10px;
+    font-weight: bold;
+    background-color: white;
+    border-bottom: 1px solid black;
+}
+.mill-op:hover {
+    color: black !important;
+}
+.mill-op-select {
+    color: black !important;
+    background-color: #eee;
+}
+.mill-div {
+    margin: 10px;
+}
+#mill-op-tool {
+    border-top: 1px solid black;
+    padding: 10px;
 }
 #jogpad button {
     font-weight: bold;
