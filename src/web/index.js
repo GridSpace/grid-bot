@@ -173,7 +173,7 @@ function remove(file) {
 
 function clear_files() {
     if (confirm('delete all files?')) {
-        for (file in files) {
+        for (let file in files) {
             send(`*delete ${file}`);
         }
         setTimeout(() => {
