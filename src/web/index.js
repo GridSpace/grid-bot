@@ -992,6 +992,18 @@ function init() {
             mill_sel(el, op, target);
         };
     });
+    let tool_diam = $('tool-diam');
+    let tool_metric = $('tool-metric');
+    let tool_imperial = $('tool-imperial');
+    tool_diam.value = settings.tool_diam || 0.25;
+    tool_metric.checked = settings.tool_metric === 'true';
+    tool_imperial.checked = !tool_metric.checked;
+    tool_metric.onclick = tool_imperial.onclick = () => {
+        settings.tool_metric = tool_metric.checked
+    };
+    tool_diam.onkeyup = (ev) => {
+        settings.tool_diam = tool_diam.value;
+    };
     // reload page on status click
     $('page-home').onclick = ev => {
         if (ev.target.id === 'state') {
