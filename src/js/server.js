@@ -70,7 +70,7 @@ const MCODE = {
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
 let port = oport;               // default port (possible to probe)
-let checksum = !opt.nocheck;    // use line numbers and checksums
+let checksum = opt.checksum;    // use line numbers and checksums
 let lineno = 1;                 // next output line number
 let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
