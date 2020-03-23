@@ -5,16 +5,16 @@ from a fresh install of raspbian desktop, as user ```pi``` run this command:
 ```curl https://raw.githubusercontent.com/GridSpace/grid-bot/master/setup.sh | bash```
 
 ### Home Screen
-![GridBot Home Screen](https://grid.space/img/gridbot-home.jpg)
+![GridBot Home Screen](https://static.grid.space/img/gridbot-home.jpg)
 
 ### Jog and Movement Screen
-![GridBot Move Screen](https://grid.space/img/gridbot-move.jpg)
+![GridBot Move Screen](https://static.grid.space/img/gridbot-move.jpg)
 
 ### File Management Screen
-![GridBot File Screen](https://grid.space/img/gridbot-file.jpg)
+![GridBot File Screen](https://static.grid.space/img/gridbot-file.jpg)
 
 ### Direct Communications Interface
-![GridBot Comm Screen](https://grid.space/img/gridbot-comm.jpg)
+![GridBot Comm Screen](https://static.grid.space/img/gridbot-comm.jpg)
 
 ### Firmware Settings Screen
-![GridBot Firmware Screen](https://grid.space/img/gridbot-firm.jpg)
+![GridBot Firmware Screen](https://static.grid.space/img/gridbot-firm.jpg)
