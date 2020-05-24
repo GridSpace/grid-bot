@@ -1019,5 +1019,5 @@ function init() {
     input_deselect();
     // restore settings
     set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j10"));
-    set_jog_speed(parseFloat(settings.jog_speed) || 1, $(settings.jog_speed_sel || "js1000"));
+    set_jog_speed(parseFloat(settings.jog_speed) || 100, $(settings.jog_speed_sel || "js0100"));
 }

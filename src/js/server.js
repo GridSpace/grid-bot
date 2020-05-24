@@ -9,11 +9,7 @@
  * firmwares.
  */
 
-/**
- * TODO
- */
-
-const version = "Serial [014]";
+const version = "Serial [015]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -24,9 +20,6 @@ const net = require('net');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const oport = opt.device || opt.port || opt._[0]; // serial port device path
-const baud = parseInt(opt.baud || "250000");      // baud rate for serial port
-
 const os = require('os');
 const url = require('url');
 const http = require('http');
@@ -36,11 +29,15 @@ const moment = require('moment');
 const connect = require('connect');
 const WebSocket = require('ws');
 const bedclear = "etc/bedclear";
-const filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
-const webdir = opt.webdir || "src/web";
-const webport = parseInt(opt.web || opt.webport || 4080) || 0;
-const grid = opt.grid || "https://grid.space";
-const mode = opt.mode || "fdm";
+const oport = opt.device || opt.port || opt._[0]; // serial port device path
+
+let baud = parseInt(opt.baud || "250000");      // baud rate for serial port
+let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
+let webdir = opt.webdir || "src/web";
+let webport = parseInt(opt.web || opt.webport || 4080) || 0;
+let grid = opt.grid || "https://grid.space";
+let mode = opt.mode || "fdm";
+let ctrlport = opt.listen;
 
 const STATES = {
     IDLE: "idle",
@@ -111,7 +108,7 @@ let onabort = mode === 'fdm' ? [
     "M107",             // shut off cooling fan
     "G91",              // set relative moves
     "G0 Z10 X0 Y0",     // drop bed 1cm
-    "G28 X Y",          // home X & Y
+    "G28 XY",           // home X & Y
     "G90",              // restore absolute moves
     "M84"               // disable steppers
 ] : [
@@ -229,22 +226,24 @@ const status = {
 function load_config() {
     try {
         if (lastmod('etc/server.json')) {
-            let json = JSON.parse(fs.readFileSync('etc/server.json').toString());
-            if (Array.isArray(json.onboot)) {
-                onboot = json.onboot;
-            }
-            if (Array.isArray(json.onabort)) {
-                onabort = json.onabort;
-            }
-            if (Array.isArray(json.onerror)) {
-                onerror = json.onerror;
-            }
-            if (Array.isArray(json.onpause)) {
-                onpause = json.onpause;
-            }
-            if (Array.isArray(json.onresume)) {
-                onresume = json.onresume;
-            }
+            let json = eval('('+fs.readFileSync('etc/server.json').toString()+')');
+            let on = json.on || {};
+            if (Array.isArray(on.boot)) onboot = on.boot;
+            if (Array.isArray(on.abort)) onabort = on.abort;
+            if (Array.isArray(on.error)) onerror = on.error;
+            if (Array.isArray(on.pause)) onpause = on.pause;
+            if (Array.isArray(on.resume)) onresume = on.resume;
+            let opt = json.opt || json;
+            mode = opt.mode || mode;
+            filedir = opt.filedir || filedir;
+            grid = opt.grid || grid;
+            port = opt.port || port;
+            baud = opt.baud || baud;
+            bufmax = opt.maxbuf || opt.bufmax || bufmax;
+            webport = opt.webport || webport;
+            ctrlport = opt.listen || opt.ctrlport || ctrlport;
+            webdir = opt.webdir || webdir;
+            debug = opt.debug || debug;
         }
     } catch (e) {
         console.log({error_reading_config: e});
@@ -1640,20 +1639,23 @@ if (opt.probe) {
     return;
 }
 
-// add stdout to clients
-clients.push({console: true, monitoring: true, write: (line) => {
-    process.stdout.write(`[${moment().format("HH:mm:ss")}] ${line}`);
-}});
+function add_proc_ctrl() {
+    // add stdout to clients
+    clients.push({console: true, monitoring: true, write: (line) => {
+        process.stdout.write(`[${moment().format("HH:mm:ss")}] ${line}`);
+    }});
 
-process.stdout.monitoring = true;
+    process.stdout.monitoring = true;
 
-if (opt.stdin) {
-    new LineBuffer(process.stdin);
-    process.stdin.on("line", line => { process_input(line, clients[0]) });
-    status.clients.stdin = 1;
+    if (opt.stdin) {
+        new LineBuffer(process.stdin);
+        process.stdin.on("line", line => { process_input(line, clients[0]) });
+        status.clients.stdin = 1;
+    }
 }
 
-if (opt.listen) {
+function start_ctrl_port(ctrlport) {
+    if (!ctrlport) return;
     net.createServer(socket => {
         let dev = status.device;
         status.clients.net++;
@@ -1674,11 +1676,12 @@ if (opt.listen) {
             }
         });
         clients.push(socket);
-    }).listen(parseInt(opt.listen) || 4000);
+    }).listen(parseInt(ctrlport) || 4000);
 }
 
 // start web server
-if (webport > 0) {
+function start_web_port(webport) {
+    if (!(webport > 0)) return;
     const handler = connect()
         .use(headers)
         .use(drop_handler)
@@ -1715,17 +1718,21 @@ if (webport > 0) {
 function startup() {
     load_config();
     console.log({
+        mode,
         uuid,
         files: filedir,
         grid,
-        device: port || 'undefined',
+        device: port || 'missing',
         baud,
         maxbuf: bufmax,
-        ctrlport: opt.listen || 'off',
         webport: webport || 'off',
+        ctrlport: ctrlport || 'off',
         webdir,
         version
     });
+    add_proc_ctrl();
+    start_ctrl_port(ctrlport);
+    start_web_port(webport);
     mkdir(filedir);
     get_set_uuid();
     is_bed_clear();
