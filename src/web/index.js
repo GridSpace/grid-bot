@@ -231,7 +231,9 @@ function update_probe_z() {
     let newz = settings.M851.Z + pos.Z;
     if (isNaN(newz)) return alert(`invalid new z ${newz}`);
     if (newz > 5 || newz < -5) return alert(`invalid new z value ${newz}`);
-    send(`M851 Z${newz}; M503; *status`);
+    if (confirm(`set new z probe offset to ${newz}`)) {
+        send(`M851 Z${newz}; M503; *status`);
+    }
 }
 
 function probe_bed() {
@@ -737,7 +739,8 @@ function set_mode_cnc() {
     // move
     $('zeros').style.display = '';
     $('clear-origin').style.display = 'none';
-    $('go-center').style.display = 'none';
+    $('up-z-probe').style.display = 'none';
+    // $('go-center').style.display = 'none';
     $('jog-fdm').style.display = 'none';
     $('jog-cnc').style.display = '';
     $('abl').style.display = 'none';
@@ -763,7 +766,8 @@ function set_mode_fdm() {
     // move
     $('zeros').style.display = 'none';
     $('clear-origin').style.display = '';
-    $('go-center').style.display = '';
+    $('up-z-probe').style.display = '';
+    // $('go-center').style.display = '';
     $('jog-fdm').style.display = '';
     $('jog-cnc').style.display = 'none';
     $('abl').style.display = '';
