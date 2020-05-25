@@ -184,7 +184,7 @@ function clear_files() {
 
 function center_go() {
     let stat = last_set;
-    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} Z1 F${jog_speed}`);
+    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} F${jog_speed}`);
 }
 
 function home_go() {
@@ -219,6 +219,19 @@ function origin_clear() {
     if (alert_on_run()) return;
     send('M206 X0 Y0 Z0');
     send('M500');
+}
+
+function update_probe_z() {
+    if (alert_on_run()) return;
+    let status = last_set;
+    let settings = status.settings;
+    let pos = status.pos;
+    if (!settings.M851) return alert('missing M851');
+    if (!pos) return alertn('missing position');
+    let newz = settings.M851.Z + pos.Z;
+    if (isNaN(newz)) return alert(`invalid new z ${newz}`);
+    if (newz > 5 || newz < -5) return alert(`invalid new z value ${newz}`);
+    send(`M851 Z${newz}; M503; *status`);
 }
 
 function probe_bed() {
@@ -727,6 +740,7 @@ function set_mode_cnc() {
     $('go-center').style.display = 'none';
     $('jog-fdm').style.display = 'none';
     $('jog-cnc').style.display = '';
+    $('abl').style.display = 'none';
     // mill ops
     $('menu-mill').style.display = '';
     // files
@@ -752,6 +766,7 @@ function set_mode_fdm() {
     $('go-center').style.display = '';
     $('jog-fdm').style.display = '';
     $('jog-cnc').style.display = 'none';
+    $('abl').style.display = '';
     // mill ops
     $('menu-mill').style.display = 'none';
     // files

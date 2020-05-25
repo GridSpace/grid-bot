@@ -137,6 +137,10 @@
                             <button onclick="send_safe('M18')">Disable motors</button>
                             <button id="go-center" onclick="center_go()">Goto Center</button>
                         </div>
+                        <div class="col" id="abl">
+                            <button onclick="update_probe_z()">Update Probe Z</button>
+                            <button onclick="probe_bed()">Auto Bed Level</button>
+                        </div>
                         <div class="grow"></div>
                     </div>
                     <div class="grow"></div>
@@ -166,21 +170,21 @@
                                     <td><button onclick="jog('Y',1)">Y+</button></td>
                                     <td><button id="e-dn" onclick="retract()">E-</button></td>
                                     <td>&nbsp;</td>
-                                    <td><button onclick="send('G28 XY')"><i class="fa fa-home"></i><br>XY</button></td>
+                                    <td><button onclick="send_safe('G28 XY')"><i class="fa fa-home"></i><br>XY</button></td>
                                 </tr>
                                 <tr>
                                     <td><button onclick="jog('X',-1)">X-</button></td>
                                     <td><button onclick="home_go()"><i class="fa fa-home"></i></button></td>
                                     <td><button onclick="jog('X',1)">X+</button></td>
                                     <td>&nbsp;</td>
-                                    <td><button onclick="send('G28 Z')"><i class="fa fa-home"></i><br>Z</button></td>
+                                    <td><button onclick="send_safe('G28 Z')"><i class="fa fa-home"></i><br>Z</button></td>
                                 </tr>
                                 <tr>
                                     <td><button onclick="jog('Z',1)">Z+</button></td>
                                     <td><button onclick="jog('Y',-1)">Y-</button></td>
                                     <td><button id="e-up" onclick="extrude()">E+</button></td>
                                     <td>&nbsp;</td>
-                                    <td><button onclick="send('G0Z0')">Z0</button></td>
+                                    <td><button onclick="send_safe('G0 Z1 F200')">Z1</button></td>
                                 </tr>
                             </table>
                             <table id="jog-cnc">
