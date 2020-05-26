@@ -1051,6 +1051,7 @@ function job_abort() {
         return;
     }
     evtlog("job aborted", {error: true});
+    buf = [];
     onboot = onabort;
     status.print.pause = false;
     status.print.abort = true;

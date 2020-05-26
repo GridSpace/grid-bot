@@ -380,6 +380,7 @@ function cancel() {
 
 function estop() {
     send('!M410');
+    send('!M999');
     send('*abort');
 }
 
