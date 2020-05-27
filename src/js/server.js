@@ -406,6 +406,10 @@ function on_quiescence() {
         status.state = STATES.IDLE;
         evtlog("device ready");
     } else {
+        if (!sport) {
+            evtlog("bump boot: missing serial port. exiting.");
+            return process.exit(1);
+        }
         evtlog("bump boot");
         sport.write('\r\nM110 N0\r\n');
         sport.flush();
@@ -1055,10 +1059,6 @@ function job_abort() {
     onboot = onabort;
     status.print.pause = false;
     status.print.abort = true;
-    // if printing, ensure filament retracts
-    if (status.print.run && mode === 'fdm') {
-        onboot = onboot.concat(["G1 E20 F300"]);
-    }
     // forces re-init of marlin and onboot script to run
     sport.close();
 };
