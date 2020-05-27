@@ -1055,6 +1055,8 @@ function job_abort() {
         return;
     }
     evtlog("job aborted", {error: true});
+    sport.write('\nM999\n');
+    sport.write('\nM410\n');
     buf = [];
     onboot = onabort;
     status.print.pause = false;
