@@ -219,10 +219,24 @@ function origin_set() {
     }
 }
 
+function origin_set_axis(axis) {
+    if (alert_on_run()) return;
+    axis = axis.toUpperCase();
+    send(`G92 ${axis}0`);
+    if (grbl) {
+        send(`G10 L20 P1 ${axis}0; ?`);
+    } else {
+        send('*status');
+    }
+}
+
+
 function origin_clear() {
     if (alert_on_run()) return;
-    send('M206 X0 Y0 Z0');
-    send('M500');
+    if (!grbl) {
+        send('M206 X0 Y0 Z0');
+        send('M500');
+    }
 }
 
 function update_probe_z() {

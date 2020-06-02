@@ -88,18 +88,21 @@ let sport = null;               // bound serial port
 let upload = null;              // name of file being uploaded
 let debug = opt.debug;          // debug and dump all data
 let extrude = true;             // enable / disable extrusion
-let onboot = mode === 'fdm' ? [ // commands to run on boot
+let onboot = [];                // commands to run on boot
+let onabort = [];               // commands to run on job abort
+let onboot_fdm = [
     "M155 S2",          // report temp every 2 seconds
     "M115",             // get firmware info
     "M211",             // get endstop boundaries
     "M119",             // get endstop status
     "M114"              // get position
-] : [
+];
+let onboot_cnc = [
     "G21",              // metric units
     "G90",              // absolute moves
-    "G92 X0 Y0 Z0 E0"   // zero out XYZE
+    "G92 X0 Y0 Z0"      // zero out XYZ
 ];
-let onabort = mode === 'fdm' ? [
+let onabort_fdm = [
     "G21",              // metric units
     "G90",              // absolute moves
     "G92 X0 Y0 Z0 E0",  // zero out XYZE
@@ -112,10 +115,11 @@ let onabort = mode === 'fdm' ? [
     "G28 XY",           // home X & Y
     "G90",              // restore absolute moves
     "M84"               // disable steppers
-] : [
+];
+let onabort_cnc = [
     "G21",              // metric units
     "G90",              // absolute moves
-    "G92 X0 Y0 Z0 E0",  // zero out XYZE
+    "G92 X0 Y0 Z0",     // zero out XYZ
     "M84"               // disable steppers
 ];
 let onerror = onabort.slice();
@@ -233,15 +237,17 @@ function load_config() {
     try {
         if (lastmod('etc/server.json')) {
             let json = eval('('+fs.readFileSync('etc/server.json').toString()+')');
+            let opt = json.opt || json;
+            status.device.mode = mode = opt.mode || mode;
+            status.device.grbl = grbl = opt.grbl || grbl;
+            onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
+            onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
             let on = json.on || {};
             if (Array.isArray(on.boot)) onboot = on.boot;
             if (Array.isArray(on.abort)) onabort = on.abort;
             if (Array.isArray(on.error)) onerror = on.error;
             if (Array.isArray(on.pause)) onpause = on.pause;
             if (Array.isArray(on.resume)) onresume = on.resume;
-            let opt = json.opt || json;
-            status.device.mode = mode = opt.mode || mode;
-            status.device.grbl = grbl = opt.grbl || grbl;
             filedir = opt.filedir || filedir;
             grid = opt.grid || grid;
             port = opt.port || port;
@@ -648,7 +654,6 @@ function on_serial_line(line) {
         status.pos.X = gopt.pos[0] - gopt.wco[0];
         status.pos.Y = gopt.pos[1] - gopt.wco[1];
         status.pos.Z = gopt.pos[2] - gopt.wco[2];
-        console.log({grbl: line, gopt});
     }
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
@@ -753,7 +758,7 @@ function send_file(filename) {
     }
     status.print.run = true;
     status.print.abort = false;
-    status.print.pause = paused =false;
+    status.print.pause = paused = false;
     status.print.cancel = cancel = false;
     status.print.filename = filename;
     status.print.outdir = filename.substring(0, filename.lastIndexOf(".")) + ".output";
@@ -1187,7 +1192,7 @@ function queue(line, flags) {
     if (line.length === 0) {
         return;
     }
-    if (waiting < bufmax || (paused && priority)) {
+    if ((!paused && waiting < bufmax) || (paused && priority)) {
         write(line, flags);
     } else {
         if (priority) {
@@ -1251,6 +1256,9 @@ function tokenize_line(line) {
 }
 
 function write(line, flags) {
+    // if (paused) {
+    //     console.trace({write_paused: line, flags});
+    // }
     if (!line) {
         console.trace("missing line", line, flags);
         return;
