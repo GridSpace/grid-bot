@@ -36,6 +36,7 @@ let input = null;       // active input for keypad
 let settings = localStorage;
 let selected = null;
 let mode = null;        // for checking against current status
+let grbl = false;
 let run_verb = 'print';
 let job_verb = 'print';
 
@@ -212,6 +213,9 @@ function origin_set() {
     }
     if (mode === 'cnc') {
         send('G92 X0 Y0 Z0');
+        if (grbl) {
+            send('G10 L20 P1 X0 Y0 Z0; ?');
+        }
     }
 }
 
@@ -706,6 +710,9 @@ function status_update(status) {
         if (status.device.name) {
             let name = status.device.name.split('.')[0] || 'GridBot';
             document.title = `${name}`;;
+        }
+        if (status.device.grbl !== grbl) {
+            grbl = status.device.grbl;
         }
         if (status.device.mode !== mode) {
             set_mode(mode = status.device.mode);

@@ -37,6 +37,7 @@ let webdir = opt.webdir || "src/web";
 let webport = parseInt(opt.web || opt.webport || 4080) || 0;
 let grid = opt.grid || "https://grid.space";
 let mode = opt.mode || "fdm";
+let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
 
 const STATES = {
@@ -155,6 +156,7 @@ const status = {
         name: os.hostname(),    // device host name for web display
         uuid,
         mode,                   // device mode: fdm or cnc
+        grbl,                   // cnc grbl mode
         version,                // version of code running
         firm: {                 // firmware version and author
             ver: "?",
@@ -215,6 +217,10 @@ const status = {
         rel: false,             // relative moves
         stack: []               // saved positions
     },
+    grbl: {
+        wco: [0,0,0],
+        pos: [0,0,0]
+    },
     feed: 1,                    // feed scaling
     estop: {                    // endstop status
         min: {},
@@ -234,7 +240,8 @@ function load_config() {
             if (Array.isArray(on.pause)) onpause = on.pause;
             if (Array.isArray(on.resume)) onresume = on.resume;
             let opt = json.opt || json;
-            mode = opt.mode || mode;
+            status.device.mode = mode = opt.mode || mode;
+            status.device.grbl = grbl = opt.grbl || grbl;
             filedir = opt.filedir || filedir;
             grid = opt.grid || grid;
             port = opt.port || port;
@@ -411,9 +418,11 @@ function on_quiescence() {
             return process.exit(1);
         }
         evtlog("bump boot");
-        sport.write('\r\nM110 N0\r\n');
-        sport.flush();
-        onboot.push('M503')
+        if (!grbl) {
+            sport.write('\r\nM110 N0\r\n');
+            sport.flush();
+            onboot.push('M503')
+        }
         on_serial_line('start');
         status.device.firm.ver = 'new';
         status.device.firm.auth = 'new';
@@ -623,6 +632,23 @@ function on_serial_line(line) {
                     status.device.max[v.charAt(0)] = parseFloat(v.substring(1));
                 });
         }
+    }
+    if (line.indexOf("Grbl 1.1") === 0 && mode === 'cnc') {
+        evtlog(`enabling grbl support`);
+        status.device.grbl = grbl = true;
+    }
+    // parse GRBL position
+    if (line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
+        let gopt = status.grbl;
+        let grbl = line.substring(1,line.length-2).split('|').forEach(tok => {
+            tok = tok.split(':');
+            if (tok[0] === 'MPos') gopt.pos = tok[1].split(',').map(v => parseFloat(v));
+            if (tok[0] === 'WCO') gopt.wco = tok[1].split(',').map(v => parseFloat(v));
+        });
+        status.pos.X = gopt.pos[0] - gopt.wco[0];
+        status.pos.Y = gopt.pos[1] - gopt.wco[1];
+        status.pos.Z = gopt.pos[2] - gopt.wco[2];
+        console.log({grbl: line, gopt});
     }
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
