@@ -1,4 +1,5 @@
-/** Copyright Stewart Allen <so@a3z.co> -- All Rights Reserved */
+/** Copyright Stewart Allen <sa@grid.space> -- All Rights Reserved */
+
 "use strict";
 
 /**
@@ -1777,6 +1778,9 @@ function startup() {
     check_file_dir();
     find_net_address();
     check_camera();
+    if (opt.register) {
+        grid_spool();
+    }
 }
 
 if (!port) {

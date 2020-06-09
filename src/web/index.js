@@ -1,4 +1,5 @@
-/** Copyright Stewart Allen <so@a3z.co> -- All Rights Reserved */
+/** Copyright Stewart Allen <sa@grid.space> -- All Rights Reserved */
+
 "use strict";
 
 const MCODE = {

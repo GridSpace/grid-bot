@@ -1,3 +1,5 @@
+/** Copyright Stewart Allen <sa@grid.space> -- All Rights Reserved */
+
 class LineBuffer {
 
     constructor(stream, online) {
