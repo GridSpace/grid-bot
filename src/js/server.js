@@ -930,12 +930,12 @@ function process_input_two(line, channel) {
         }
     } else if (line.indexOf("*delete ") === 0) {
         let base = line.substring(8);
-        let gcode = base.indexOf(".gcode");
-        let files = null;
-        if (gcode > 0) {
-            base = base.substring(0, gcode);
+        let eio = base.lastIndexOf(".");
+        if (eio > 0) {
+            base = base.substring(0, eio);
         }
-        files = [
+        let files = [
+            path.join(filedir, base + ".nc"),
             path.join(filedir, base + ".hex"),
             path.join(filedir, base + ".gcode"),
             path.join(filedir, base + ".print"),
