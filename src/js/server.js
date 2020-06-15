@@ -645,17 +645,19 @@ function on_serial_line(line) {
         status.device.grbl = grbl = true;
     }
     // parse GRBL position
-    if (line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
-        let gopt = status.grbl;
-        let grbl = line.substring(1,line.length-2).split('|').forEach(tok => {
-            tok = tok.split(':');
-            if (tok[0] === 'MPos') gopt.pos = tok[1].split(',').map(v => parseFloat(v));
-            if (tok[0] === 'WCO') gopt.wco = tok[1].split(',').map(v => parseFloat(v));
-        });
-        status.pos.X = gopt.pos[0] - gopt.wco[0];
-        status.pos.Y = gopt.pos[1] - gopt.wco[1];
-        status.pos.Z = gopt.pos[2] - gopt.wco[2];
-    }
+    try {
+        if (line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
+            let gopt = status.grbl;
+            let grbl = line.substring(1,line.length-2).split('|').forEach(tok => {
+                tok = tok.split(':');
+                if (tok[0] === 'MPos') gopt.pos = tok[1].split(',').map(v => parseFloat(v));
+                if (tok[0] === 'WCO') gopt.wco = tok[1].split(',').map(v => parseFloat(v));
+            });
+            status.pos.X = gopt.pos[0] - gopt.wco[0];
+            status.pos.Y = gopt.pos[1] - gopt.wco[1];
+            status.pos.Z = gopt.pos[2] - gopt.wco[2];
+        }
+    } catch (e) { console.log({line,type:typeof(line),e}); }
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
         let from = line.split(' ')[1];
