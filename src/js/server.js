@@ -599,10 +599,10 @@ function on_serial_line(line) {
     }
     // parse M503 settings status
     if (line.indexOf("echo:  M") === 0) {
-        line = line.substring(7).split(' ');
-        let code = line.shift();
+        let toks = line.substring(7).split(' ');
+        let code = toks.shift();
         let map = {};
-        line.forEach(tok => {
+        toks.forEach(tok => {
             map[tok.substring(0,1)] = parseFloat(tok.substring(1));
         });
         status.settings[code] = map;
