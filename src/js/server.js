@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const version = "Serial [015]";
+const version = "Serial [016]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -258,6 +258,9 @@ function load_config() {
             ctrlport = opt.listen || opt.ctrlport || ctrlport;
             webdir = opt.webdir || webdir;
             debug = opt.debug || debug;
+        } else {
+            onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
+            onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
         }
     } catch (e) {
         console.log({error_reading_config: e});
@@ -402,6 +405,7 @@ let wait_time = 10000;
 
 function quiescence_waiter() {
     clearTimeout(wait_quiesce);
+    evtlog(`await quiescence ${wait_counter}, currently ${status.device.lines}`);
     if (status.device.lines === wait_counter) {
         wait_quiesce = null;
         quiescence = true;
@@ -414,6 +418,7 @@ function quiescence_waiter() {
 
 // perform boot sequence upon quiescence
 function on_quiescence() {
+    evtlog(`on quiescence starting=${starting}`);
     if (starting) {
         collect = [];
         starting = false;
@@ -437,6 +442,7 @@ function on_quiescence() {
         starting = true;
         quiescence_waiter();
     }
+    evtlog(`on boot commands: ${onboot.length}`);
     // queue onboot commands
     onboot.forEach(cmd => {
         queue(cmd);
