@@ -443,7 +443,7 @@ function on_quiescence() {
     });
     onboot = [];
     // allow remote spooling
-    grid_spool();
+    // grid_spool();
 }
 
 // handle a single line of serial input
@@ -817,7 +817,8 @@ function process_input_two(line, channel) {
     line = line.toString().trim();
     // remap *name to an *exec call
     if (line.indexOf("*name ") === 0) {
-        line = `*exec sudo bin/update-name.sh ${line.substring(6)}`;
+        status.device.name = line.substring(6);
+        line = `*exec sudo bin/update-name.sh ${status.device.name}`;
     }
     // remap *wifi to an *exec call
     if (line.indexOf("*wifi ") === 0) {
@@ -1608,6 +1609,7 @@ function grid_spool() {
             timer = Date.now() - timer;
             if (body === 'superceded') {
                 // we have overlapping outbound calls (bad on us)
+                console.log({grid_up: body});
                 return;
             }
             if (body === 'reconnect') {
@@ -1778,7 +1780,7 @@ function startup() {
     check_file_dir();
     find_net_address();
     check_camera();
-    if (opt.register) {
+    if (opt.register !== false) {
         grid_spool();
     }
 }
