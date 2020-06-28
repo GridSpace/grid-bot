@@ -131,12 +131,14 @@
                             <button onclick="origin_set()">Set Origin</button>
                             <button id="clear-origin" onclick="origin_clear()">Clear Origin</button>
                             <button onclick="origin_go()">Goto Origin</button>
+                            <button onclick="baby_z_down()">Babystep Down</button>
                         </div>
                         <div class="col">
                             <button onclick="send_safe('M17')">Enable motors</button>
                             <button onclick="send_safe('M18')">Disable motors</button>
                             <button id="up-z-probe" onclick="update_probe_z()">Update Probe Z</button>
                             <!--<button id="go-center" onclick="center_go()">Goto Center</button>-->
+                            <button onclick="baby_z_up()">Babystep Up</button>
                         </div>
                         <div class="col" id="abl">
                             <button onclick="probe_bed()">Auto Bed Level</button>

@@ -205,6 +205,14 @@ function origin_go() {
     }
 }
 
+function baby_z_down() {
+    send(`M290 Z-0.025; M503; *status`);
+}
+
+function baby_z_up() {
+    send(`M290 Z0.025; M503; *status`);
+}
+
 function origin_set() {
     if (alert_on_run()) return;
     if (mode === 'fdm' && last_set && last_set.pos) {
