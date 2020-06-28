@@ -1,4 +1,8 @@
-node_modules
-etc/bedclear
-etc/uuid
-tmp
+/node_modules
+/etc/bedclear
+/etc/uuid
+/tmp
+/uploads
+/node
+/package-lock.json
+/node-v*
