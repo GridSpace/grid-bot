@@ -66,7 +66,7 @@ def background_spool(file_saver, logger):
                 logger.info('superceded')
                 break
             elif text == 'reconnect':
-                logger.info('reconnect')
+                logger.debug('reconnect')
             else:
                 body = text.split('\0')
                 file = body[0]
