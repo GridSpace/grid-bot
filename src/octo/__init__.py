@@ -36,24 +36,24 @@ from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
 from requests.exceptions import ConnectionError
 
-def background_spool(file_saver, logger, name):
-    uuid = socket.getfqdn()
-    host = socket.gethostname()
-    addr = str(socket.gethostbyname(host))
-    stat = {"device":{
-                "name":name or host,
-                "host":host,
-                "uuid":uuid,
-                "port":5000,
-                "mode":"octo",
-                "addr":[addr]
-            },"state":"ready"}
-    stat = urllib.parse.quote_plus(json.dumps(stat, separators=(',', ':')))
-    url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,stat=stat)
-
+def background_spool(file_saver, get_name, logger):
     while True:
         logger.debug('connect')
         try:
+            uuid = socket.getfqdn()
+            host = socket.gethostname()
+            name = get_name() or host
+            addr = str(socket.gethostbyname(host))
+            stat = {"device":{
+                        "name":name,
+                        "host":host,
+                        "uuid":uuid,
+                        "port":5000,
+                        "mode":"octo",
+                        "addr":[addr]
+                    },"state":"ready"}
+            stat = urllib.parse.quote_plus(json.dumps(stat, separators=(',', ':')))
+            url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,stat=stat)
             response = requests.get(url)
         except ConnectionError as error:
             logger.info('connection error {}'.format(error))
@@ -104,11 +104,14 @@ class GridLocalPlugin(octoprint.plugin.SettingsPlugin,
     def file_saver(self, filename, gcode):
         self._file_manager.add_file("local", filename, FileSaveWrapper(gcode))
 
+    def get_name(self):
+        return self._settings.global_get(["appearance", "name"])
+
     def get_settings_defaults(self):
         return dict(enabled=None,appearance=dict(name="aname"))
 
     def on_settings_save(self, data):
-        self._logger.debug('gridlocal:settings_save')
+        self._logger.debug('settings_save')
 
     def on_environment_detected(self, environment, *args, **kwargs):
         self._environment = environment
@@ -116,15 +119,15 @@ class GridLocalPlugin(octoprint.plugin.SettingsPlugin,
     def on_after_startup(self):
         thread = threading.Thread(target=background_spool, kwargs=({
             "file_saver": self.file_saver,
-            "logger": self._logger,
-            "name": self._settings.global_get(["appearance", "name"])
+            "get_name": self.get_name,
+            "logger": self._logger
         }))
         thread.daemon = True
         thread.start()
         self._thread = thread
 
     def on_event(self, event, payload):
-        self._logger.debug('gridlocal:event {} {}'.format(event,payload))
+        self._logger.debug('event {} {}'.format(event,payload))
 
 __plugin_name__ = "Grid.Local Cloud Spooler"
 __plugin_description__ = "Provides access to a secure endpoint allowing for local spooling from browser-based applications"
