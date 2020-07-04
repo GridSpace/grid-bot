@@ -21,14 +21,15 @@ import concurrent.futures
 from octoprint.util import RepeatedTimer, monotonic_time
 from octoprint.util.version import get_octoprint_version_string
 from octoprint.events import Events
+from octoprint.filemanager.util import DiskFileWrapper
 
 
 import json
 import time
 import urllib
 import socket
-import asyncio
 import requests
+import threading
 
 from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
@@ -41,95 +42,82 @@ stat = {"device":{"name":host,"host":host,"uuid":uuid,"port":5000,"mode":"octo",
 stat = urllib.parse.quote_plus(json.dumps(stat, separators=(',', ':')))
 url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,stat=stat)
 
-async def background_spool():
+def background_spool(file_saver, logger):
     while True:
-        print('grid.spool connect')
-
+        logger.debug('connect')
         try:
             response = requests.get(url)
         except ConnectionError as error:
-            print('connection error', error)
+            logger.info('connection error {}'.format(error))
             time.sleep(10)
             break
         except HTTPError as error:
-            print('http error', error)
+            logger.info('http error {}'.format(error))
             time.sleep(5)
             break
         except Timeout:
-            print('timeout')
+            logger.info('timeout')
             time.sleep(1)
             continue
-    #    except:
-    #        print('error')
-    #        continue
 
         if response:
             text = response.text
             if text == 'superceded':
-                print('superceded')
+                logger.info('superceded')
                 break
             elif text == 'reconnect':
-                print('reconnect')
+                logger.info('reconnect')
             else:
                 body = text.split('\0')
                 file = body[0]
                 gcode = body[1]
-                print('file',file)
-                print('gcode',len(gcode))
+                logger.info('received "{}" length={}'.format(file,len(gcode)))
+                file_saver(file, gcode)
 
+class FileSaveWrapper:
+    def __init__(self, gcode):
+        self.gcode = gcode
 
-# noinspection PyMissingConstructor
+    def save(self, destination):
+        f = open(destination, "w")
+        f.write(self.gcode)
+        f.close()
+
 class GridLocalPlugin(octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.StartupPlugin,
                      octoprint.plugin.EnvironmentDetectionPlugin):
 
     def __init__(self):
-        self._startup_time = monotonic_time()
-        print('gridlocal','__init__')
+        self._start_time = monotonic_time()
 
     def initialize(self):
-        print('gridlocal','initialize')
-        asyncio.run(background_spool())
+        self._logger.debug('initialize')
+        thread = threading.Thread(target=background_spool, kwargs=({
+            "file_saver": self.file_saver,
+            "logger": self._logger
+        }))
+        thread.daemon = True
+        thread.start()
+        self._thread = thread
 
-    ##~~ SettingsPlugin
+    def file_saver(self, filename, gcode):
+        wrapper = FileSaveWrapper(gcode)
+        self._file_manager.add_file("local", filename, wrapper)
 
     def get_settings_defaults(self):
         return dict(enabled=None)
 
     def on_settings_save(self, data):
-        print('gridlocal','settings_save')
-
-        enabled = self._settings.get(["enabled"])
-
-        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
-
-        #if enabled is None and self._settings.get(["enabled"]):
-            # tracking was just enabled, let's start up tracking
-            #self._start_tracking()
-
-    ##~~ EnvironmentDetectionPlugin
+        self._logger.debug('gridlocal:settings_save')
 
     def on_environment_detected(self, environment, *args, **kwargs):
-        print('gridlocal','environment',environment)
-
         self._environment = environment
 
-    ##~~ StartupPlugin
-
     def on_after_startup(self):
-        print('gridlocal','after startup')
+        self._logger.debug('gridlocal:after startup')
 
-    # noinspection PyUnresolvedReferences
     def on_event(self, event, payload):
-        print('gridlocal','event',event,payload)
-
-    ##~~ helpers
-
-    def _init_id(self):
-        if not self._settings.get(["unique_id"]):
-            import uuid
-            self._settings.set(["unique_id"], str(uuid.uuid4()))
-            self._settings.save()
+        self._logger.debug('gridlocal:event {} {}'.format(event,payload))
 
 __plugin_name__ = "Grid.Local Cloud Spooler"
 __plugin_description__ = "Provides access to a secure endpoint allowing for local spooling from browser-based applications"

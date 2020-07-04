@@ -2,8 +2,8 @@ import json
 import time
 import urllib
 import socket
-import asyncio
 import requests
+import threading
 
 from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
@@ -19,9 +19,9 @@ url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,
 #print('stat',stat)
 #print('addr',addr)
 
-async def background_spool():
+def background_spool():
     while True:
-        print('grid.spool connect')
+        print('grid.local connect')
 
         try:
             response = requests.get(url)
@@ -37,9 +37,6 @@ async def background_spool():
             print('timeout')
             time.sleep(1)
             continue
-    #    except:
-    #        print('error')
-    #        continue
 
         if response:
             text = response.text
@@ -56,7 +53,8 @@ async def background_spool():
                 print('gcode',len(gcode))
 
 print('before')
-
-asyncio.run(background_spool())
-
+thread = threading.Thread(target=background_spool, args=())
+thread.daemon = True
+thread.start()
 print('after')
+thread.join()
