@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 __license__ = 'MIT'
 __copyright__ = "Copyright (C) Stewart Allen [sa@grid.space]"
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 import octoprint.plugin
 import requests
@@ -35,14 +36,21 @@ from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
 from requests.exceptions import ConnectionError
 
-uuid = socket.getfqdn()
-host = socket.gethostname()
-addr = str(socket.gethostbyname(host))
-stat = {"device":{"name":host,"host":host,"uuid":uuid,"port":5000,"mode":"octo","addr":[addr]},"state":"ready"}
-stat = urllib.parse.quote_plus(json.dumps(stat, separators=(',', ':')))
-url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,stat=stat)
+def background_spool(file_saver, logger, name):
+    uuid = socket.getfqdn()
+    host = socket.gethostname()
+    addr = str(socket.gethostbyname(host))
+    stat = {"device":{
+                "name":name or host,
+                "host":host,
+                "uuid":uuid,
+                "port":5000,
+                "mode":"octo",
+                "addr":[addr]
+            },"state":"ready"}
+    stat = urllib.parse.quote_plus(json.dumps(stat, separators=(',', ':')))
+    url = "https://grid.space/api/grid_up?uuid={uuid}&stat={stat}".format(uuid=uuid,stat=stat)
 
-def background_spool(file_saver, logger):
     while True:
         logger.debug('connect')
         try:
@@ -92,20 +100,12 @@ class GridLocalPlugin(octoprint.plugin.SettingsPlugin,
 
     def initialize(self):
         self._logger.debug('initialize')
-        thread = threading.Thread(target=background_spool, kwargs=({
-            "file_saver": self.file_saver,
-            "logger": self._logger
-        }))
-        thread.daemon = True
-        thread.start()
-        self._thread = thread
 
     def file_saver(self, filename, gcode):
-        wrapper = FileSaveWrapper(gcode)
-        self._file_manager.add_file("local", filename, wrapper)
+        self._file_manager.add_file("local", filename, FileSaveWrapper(gcode))
 
     def get_settings_defaults(self):
-        return dict(enabled=None)
+        return dict(enabled=None,appearance=dict(name="aname"))
 
     def on_settings_save(self, data):
         self._logger.debug('gridlocal:settings_save')
@@ -114,7 +114,14 @@ class GridLocalPlugin(octoprint.plugin.SettingsPlugin,
         self._environment = environment
 
     def on_after_startup(self):
-        self._logger.debug('gridlocal:after startup')
+        thread = threading.Thread(target=background_spool, kwargs=({
+            "file_saver": self.file_saver,
+            "logger": self._logger,
+            "name": self._settings.global_get(["appearance", "name"])
+        }))
+        thread.daemon = True
+        thread.start()
+        self._thread = thread
 
     def on_event(self, event, payload):
         self._logger.debug('gridlocal:event {} {}'.format(event,payload))
