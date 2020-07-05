@@ -1595,14 +1595,15 @@ function grid_spool() {
     if (opt.nogrid) {
         return;
     }
+    let timer = Date.now();
     const stat = encodeURIComponent(JSON.stringify(status));
     const uuid = encodeURIComponent(status.device.uuid);
     const opts = [
         `uuid=${uuid}`,
-        `stat=${stat}`
+        `stat=${stat}`,
+        `time=${timer.toString(36)}`
     ].join('&');
     const proto = grid.indexOf("https:") >= 0 ? https : http;
-    let timer = Date.now();
     // console.log({up: grid, opts});
     proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
         const { headers, statusCode, statusMessage } = res;

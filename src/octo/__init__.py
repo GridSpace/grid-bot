@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 __license__ = 'MIT'
 __copyright__ = "Copyright (C) Stewart Allen [sa@grid.space]"
-__plugin_pythoncompat__ = ">=2.7,<4"
 
 import octoprint.plugin
 import requests
@@ -135,3 +134,4 @@ __plugin_url__ = "https://github.com/GridSpace/grid-bot"
 __plugin_author__ = "Stewart Allen"
 __plugin_author_email = "sa@grid.space"
 __plugin_implementation__ = GridLocalPlugin()
+__plugin_pythoncompat__ = ">=2.7,<4"
