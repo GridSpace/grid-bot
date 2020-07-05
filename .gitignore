@@ -1,5 +1,6 @@
 package-lock.json
 node_modules
+etc/server.json
 etc/bedclear
 etc/uuid
 tmp
