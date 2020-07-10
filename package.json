@@ -1,6 +1,6 @@
 {
     "name": "grid-bot",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "Runtime environment setup for GridBot controllers and devices",
     "author": "Stewart Allen <sa@grid.space>",
     "license": "MIT",

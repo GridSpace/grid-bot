@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const version = "Serial [016]";
+const version = "Serial [017]";
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -36,7 +36,7 @@ let baud = parseInt(opt.baud || "250000");      // baud rate for serial port
 let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
 let webdir = opt.webdir || "src/web";
 let webport = parseInt(opt.web || opt.webport || 4080) || 0;
-let grid = opt.grid || "https://grid.space";
+let grid = opt.grid || "https://live.grid.space";
 let mode = opt.mode || "fdm";
 let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
