@@ -10,7 +10,8 @@
  * firmwares.
  */
 
-const version = "Serial [017]";
+const vernum = "018";
+const version = `Serial [${vernum}]`;
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
@@ -1601,7 +1602,8 @@ function grid_spool() {
     const opts = [
         `uuid=${uuid}`,
         `stat=${stat}`,
-        `time=${timer.toString(36)}`
+        `time=${timer.toString(36)}`,
+        `type=gb-${vernum}`
     ].join('&');
     const proto = grid.indexOf("https:") >= 0 ? https : http;
     // console.log({up: grid, opts});
