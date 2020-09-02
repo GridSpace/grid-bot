@@ -1597,6 +1597,7 @@ function grid_spool() {
         return;
     }
     let timer = Date.now();
+    let killer = null;
     const stat = encodeURIComponent(JSON.stringify(status));
     const uuid = encodeURIComponent(status.device.uuid);
     const opts = [
@@ -1605,9 +1606,15 @@ function grid_spool() {
         `time=${timer.toString(36)}`,
         `type=gb-${vernum}`
     ].join('&');
-    const proto = grid.indexOf("https:") >= 0 ? https : http;
+    const retry = function(time) {
+        if (killer) {
+            clearTimeout(killer);
+        }
+        setTimeout(grid_spool, time);
+    };
     // console.log({up: grid, opts});
-    proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
+    const proto = grid.indexOf("https:") >= 0 ? https : http;
+    const req = proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
         const { headers, statusCode, statusMessage } = res;
         // console.log([headers, statusCode, statusMessage]);
         let body = '';
@@ -1623,7 +1630,7 @@ function grid_spool() {
             }
             if (body === 'reconnect') {
                 // console.log({reconnect: timer});
-                setTimeout(grid_spool, 100);
+                retry(100);
             } else {
                 let [file, gcode] = body.split("\0");
                 if (file && gcode) {
@@ -1640,17 +1647,21 @@ function grid_spool() {
                     }
                     console.log({grid_up_reply: body, timer});
                 }
-                setTimeout(grid_spool, 1000);
+                retry(1000);
             }
         });
         res.on('error', error => {
             console.log({http_get_error: error});
-            setTimeout(grid_spool, 2000);
+            retry(2000);
         });
     }).on('error', error => {
         console.log({grid_up_error: error});
-        setTimeout(grid_spool, 2000);
+        retry(2000);
     });
+    killer = setTimeout(() => {
+        console.log("killing zombied connection @ 10 min idle");
+        req.destroy();
+    }, 600000);
 }
 
 // -- start it up --
