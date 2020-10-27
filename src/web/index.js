@@ -106,6 +106,14 @@ function print_selected() {
     }
 }
 
+function download_selected() {
+    if (selected) {
+        download(selected.file, selected.ext);
+    } else {
+        alert('no gcode file selected');
+    }
+}
+
 function delete_selected() {
     if (selected) {
         remove(selected.file);
@@ -162,6 +170,10 @@ function print(file, ext) {
         send(`*kick ${file}`);
         menu_select('home');
     }
+}
+
+function download(file, ext) {
+    location = `${location.origin}/${file}`;
 }
 
 function remove(file) {
@@ -501,20 +513,22 @@ function cleanName(rname) {
 }
 
 function init_filedrop() {
+    var pages = $("pages");
     var list = $("file-list-wrap");
 
-    list.addEventListener("dragover", function(evt) {
+    pages.addEventListener("dragover", function(evt) {
+        menu_select("file");
         evt.stopPropagation();
         evt.preventDefault();
         evt.dataTransfer.dropEffect = 'copy';
         list.classList.add("bg_red");
     });
 
-    list.addEventListener("dragleave", function(evt) {
+    pages.addEventListener("dragleave", function(evt) {
         list.classList.remove("bg_red");
     });
 
-    list.addEventListener("drop", function(evt) {
+    pages.addEventListener("drop", function(evt) {
         evt.stopPropagation();
         evt.preventDefault();
 
@@ -555,6 +569,7 @@ function vids_update() {
 }
 
 let menu;
+let menu_named;
 let menu_selected;
 let page_selected;
 let vids_timer;
@@ -566,6 +581,7 @@ function menu_select(key) {
     }
     menu.classList.add("menu_sel")
     menu_selected = menu;
+    menu_named = key;
 
     let page = $(`page-${key}`);
     if (page_selected) {
@@ -1058,6 +1074,6 @@ function init() {
     init_filedrop();
     input_deselect();
     // restore settings
-    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j10"));
+    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j100"));
     set_jog_speed(parseFloat(settings.jog_speed) || 100, $(settings.jog_speed_sel || "js0100"));
 }

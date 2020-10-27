@@ -64,7 +64,7 @@ const MCODE = {
     M900: "linear_advance",
     M906: "stepper_current",
     M913: "hybrid_threshold",
-    M914: "stallguard_threshold"
+    M914: "stallguard"
 };
 
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
@@ -915,6 +915,9 @@ function process_input_two(line, channel) {
             }
             return send_status(pretty);
             // return evtlog(JSON.stringify(status,undefined,pretty), {status: true});
+        case "*center":
+            queue_priority(`G0 X${status.device.max.X/2} Y${status.device.max.Y/2} F6000`, channel);
+            return;
     }
     if (line === '*pause' || line.indexOf('*pause ') === 0) {
         line = line.split(' ');
@@ -1745,7 +1748,8 @@ function start_web_port(webport) {
     const handler = connect()
         .use(headers)
         .use(drop_handler)
-        .use(serve(process.cwd() + "/" + webdir + "/"));
+        .use(serve(process.cwd() + "/" + webdir + "/"))
+        .use(serve(filedir));
     const server = http.createServer(handler).listen(webport);
     const wss = new WebSocket.Server({ server });
     wss.on('connection', (ws) => {

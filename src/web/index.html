@@ -186,7 +186,7 @@
                                     <td><button onclick="jog('Y',-1)">Y-</button></td>
                                     <td><button id="e-up" onclick="extrude()">E+</button></td>
                                     <td>&nbsp;</td>
-                                    <td><button onclick="send_safe('G0 Z1 F200')">Z1</button></td>
+                                    <td><button onclick="send_safe('*center')"><i class="fas fa-compress-arrows-alt"></i></button></td>
                                 </tr>
                             </table>
                             <table id="jog-cnc">
@@ -244,6 +244,7 @@
                         <div class="grow"></div>
                         <div id="file-actions" class="col">
                             <button id="file-go" onclick="print_selected()">print</button>
+                            <button id="file-get" onclick="download_selected()">download</button>
                             <button id="file-box" onclick="runbox()">run bounds</button>
                             <button onclick="delete_selected()">delete</button>
                             <div class="ten"></div>
@@ -288,7 +289,7 @@
                         <input id="command" class="grow"></input>
                         <button id="clear">clear</button>
                     </div>
-                    <div id="comm-log"></div>
+                    <div id="comm-log" class="grow"></div>
                 </div>
 
                 <div id="page-vids" class="col"></div>
