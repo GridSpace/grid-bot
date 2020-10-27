@@ -136,7 +136,6 @@
                             <button onclick="send_safe('M17')">Enable motors</button>
                             <button onclick="send_safe('M18')">Disable motors</button>
                             <button id="up-z-probe" onclick="update_probe_z()">Update Probe Z</button>
-                            <!--<button id="go-center" onclick="center_go()">Goto Center</button>-->
                         </div>
                         <div class="col" id="abl">
                             <button onclick="probe_bed()">Auto Bed Level</button>
@@ -186,7 +185,7 @@
                                     <td><button onclick="jog('Y',-1)">Y-</button></td>
                                     <td><button id="e-up" onclick="extrude()">E+</button></td>
                                     <td>&nbsp;</td>
-                                    <td><button onclick="send_safe('*center')"><i class="fas fa-compress-arrows-alt"></i></button></td>
+                                    <td><button onclick="center_go()"><i class="fas fa-compress-arrows-alt"></i></button></td>
                                 </tr>
                             </table>
                             <table id="jog-cnc">

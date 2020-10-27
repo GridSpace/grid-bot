@@ -114,15 +114,15 @@ function download_selected() {
     }
 }
 
-function delete_selected() {
+function delete_selected(yes) {
     if (selected) {
-        remove(selected.file);
+        remove(selected.file, yes);
     } else {
         alert('no gcode file selected');
     }
 }
 
-function select(file, ext) {
+function select(file, ext, ev) {
     file = files[file];
     if (file) {
         $('file-name').innerText = file.name;
@@ -151,12 +151,21 @@ function select(file, ext) {
         file_selected = $(file.uuid);
         file_selected.classList.add("file-selected");
         selected = {file: file.name, ext};
+        if (ev) {
+            if (ev.metaKey || ev.ctrlKey) {
+                if (!ev.shiftKey) {
+                    download_selected()
+                } else {
+                    delete_selected(true);
+                }
+            }
+        }
     } else {
         selected = null;
     }
 }
 
-function print(file, ext) {
+function print(file, ext, yes) {
     if (!last_set) {
         alert('not connected');
         return;
@@ -165,7 +174,7 @@ function print(file, ext) {
     if (ext === "h") {
         return firmware_update(file);
     }
-    if (confirm(`start ${job_verb} "${file}"?`)) {
+    if (yes || confirm(`start ${job_verb} "${file}"?`)) {
         send('*clear');
         send(`*kick ${file}`);
         menu_select('home');
@@ -176,8 +185,8 @@ function download(file, ext) {
     location = `${location.origin}/${file}`;
 }
 
-function remove(file) {
-    if (confirm(`delete "${file}"?`)) {
+function remove(file, yes) {
+    if (yes || confirm(`delete "${file}"?`)) {
         send(`*delete ${file}`);
         setTimeout(() => {
             send('*list');
@@ -185,8 +194,8 @@ function remove(file) {
     }
 }
 
-function clear_files() {
-    if (confirm('delete all files?')) {
+function clear_files(yes) {
+    if (yes || confirm('delete all files?')) {
         for (let file in files) {
             send(`*delete ${file}`);
         }
@@ -198,7 +207,7 @@ function clear_files() {
 
 function center_go() {
     let stat = last_set;
-    send(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} F${jog_speed}`);
+    send_safe(`G0 X${stat.device.max.X/2} Y${stat.device.max.Y/2} F${jog_speed}`);
 }
 
 function home_go() {
@@ -897,7 +906,7 @@ function init() {
                 let cname = ext === 'g' ? name : [name,file.ext].join('.');
                 files[name] = file;
                 file.uuid = uuid;
-                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}')" ondblclick="print('${name}','${ext}')"><label class="grow">${cname}</label></div>`);
+                html.push(`<div id="${uuid}" class="row" onclick="select('${name}','${ext}',event)" ondblclick="print('${name}','${ext}')"><label class="grow">${cname}</label></div>`);
             });
             list.innerHTML = html.join('');
         } else if (msg.indexOf("***") >= 0) {
