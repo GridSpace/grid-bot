@@ -252,6 +252,7 @@ button {
     font-family: monospace;
     background: rgba(250,250,250,0.25);
     border-radius: 5px;
+    user-select: none;
 }
 #file-list label {
     font-size: x-large;

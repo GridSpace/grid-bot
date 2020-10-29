@@ -15,12 +15,11 @@ const version = `Serial [${vernum}]`;
 
 const LineBuffer = require("./linebuffer");
 const SerialPort = require('serialport');
-const spawn = require('child_process').spawn;
+const { exec, spawn } = require('child_process');
 const path = require('path');
 const opt = require('minimist')(process.argv.slice(2));
 const net = require('net');
 const fs = require('fs');
-const { exec } = require('child_process');
 
 const os = require('os');
 const url = require('url');
@@ -41,6 +40,7 @@ let grid = opt.grid || "https://live.grid.space";
 let mode = opt.mode || "fdm";
 let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
+let gridlast = '*';
 
 const STATES = {
     IDLE: "idle",
@@ -1606,6 +1606,7 @@ function grid_spool() {
     const opts = [
         `uuid=${uuid}`,
         `stat=${stat}`,
+        `last=${gridlast}`,
         `time=${timer.toString(36)}`,
         `type=gb-${vernum}`
     ].join('&');
@@ -1619,6 +1620,7 @@ function grid_spool() {
     const proto = grid.indexOf("https:") >= 0 ? https : http;
     const req = proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
         const { headers, statusCode, statusMessage } = res;
+        gridlast = '*';
         // console.log([headers, statusCode, statusMessage]);
         let body = '';
         res.on('data', data => {
@@ -1638,6 +1640,7 @@ function grid_spool() {
                 let [file, gcode] = body.split("\0");
                 if (file && gcode) {
                     console.log({file, gcode: gcode.length});
+                    gridlast = file;
                     fs.writeFile(path.join(filedir, file), gcode, () => {
                         check_file_dir(true);
                         if (mode !== 'cnc') {
