@@ -329,20 +329,32 @@ function evtlog(line, flags) {
 
 // find the port with the controller
 function probe_serial(then) {
-    let match = null;
+    let nport = undefined;
+    let nbaud = undefined;
+    let nmode = undefined;
     SerialPort.list().then(ports => {
-        ports.forEach(port => {
-            let path = port.path || port.comName;
-            let manu = port.manufacturer ? port.manufacturer.toLowerCase().trim() : '';
+        for (let port of ports) {
+            let { manufacturer, vendorId, productId, serialNumber, pnpId, path, comName } = port;
+            let npath = path || comName;
+            let manu = manufacturer ? manufacturer.toLowerCase().trim() : '';
+            let args = [ npath, manu, vendorId, productId, pnpId, serialNumber ].filter(v => v);
+            console.log('... scanning', ...args);
             if (port.pnpId) {
-                match = path;
+                nport = npath;
             } else if (manu.indexOf("arduino") >= 0 || manu.indexOf('marlinfw.org') >= 0) {
-                match = path;
-            } else if (!match && (port.vendorId || port.productId || port.serialNumber)) {
-                match = port.comnName;
+                nport = npath;
+            } else if (!nport && (vendorId || productId || serialNumber)) {
+                nport = port.comnName;
             }
-        });
-        then(match);
+            // sainsmart genmitsu
+            if (nport && vendorId === '1a86' && productId === '7523') {
+                console.log(`--- found SainSmart Genmitsu 3018 ---`);
+                nbaud = 115200;
+                nmode = 'cnc';
+                break;
+            }
+        }
+        then(nport, nbaud, nmode);
     });
 }
 
@@ -1813,9 +1825,15 @@ function startup() {
 }
 
 if (!port) {
-    probe_serial(nport => {
+    probe_serial((nport, nbaud, nmode) => {
         if (nport) {
             port = nport;
+        }
+        if (nbaud) {
+            baud = nbaud;
+        }
+        if (nmode) {
+            mode = nmode;
         }
         startup();
     });
