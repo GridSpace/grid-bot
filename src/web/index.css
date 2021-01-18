@@ -1,6 +1,3 @@
-:root {
-    --video-url: url("data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=");
-}
 *:focus {
     outline: none;
 }
@@ -22,6 +19,7 @@ div {
     margin: 0;
     border: 0;
     padding: 0;
+    position: relative;
 }
 td {
     text-align: center;
@@ -31,6 +29,7 @@ label {
     margin: 5px;
 }
 input {
+    background-color: white;
     font-family: monospace;
     padding: 3px;
     border: 1px solid #ccc;
@@ -47,8 +46,16 @@ input:disabled {
 }
 button {
     padding: 5px 8px 5px 8px;
+    background-color: #e5ecf5;
+    border: 1px solid rgba(0,0,0,0.25);
     border-radius: 5px;
     font-size: large;
+}
+button:hover {
+    background-color: #b5b8c5;
+}
+button:active {
+    background-color: #c5c8d5;
 }
 #body {
     font-size: 14px;
@@ -118,20 +125,23 @@ button {
     min-height: 468px !important;
     max-height: 468px !important;
 }
-#progress-box {
-    position: relative;
-}
 #filename {
     text-align: center;
+}
+#progress {
+    display: block;
 }
 #progress-bar {
     border-radius: 2px;
     position: absolute;
+    background-color: rgba(255,0,0,0.25);
     top: 0;
     left: 0;
+    right: 0;
     bottom: 0;
-    width: 0;
-    background-color: rgba(255,0,0,0.25);
+    margin: 5px;
+    padding: 0;
+    border: 0;
 }
 #printing label {
     width: 5em;
@@ -307,11 +317,15 @@ button {
     padding: 5px;
 }
 #page-vids {
-    background: black;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-image: var(--video-url);
+    position: relative;
+    align-items: center;
+}
+#page-vids img {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    padding: 0;
 }
 #page-ctrl > label {
     margin: 0;
@@ -343,6 +357,11 @@ button {
 }
 #settings th,td {
     text-align: left;
+}
+#settings label {
+    padding-right: 2px;
+    white-space: nowrap;
+    font-size: smaller;
 }
 #actions label {
     font-weight: bold;

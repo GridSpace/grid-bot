@@ -2,20 +2,31 @@
 
 "use strict";
 
+const IGNORE = 1;
+
 const MCODE = {
     M92:  "steps per",
+    M145: IGNORE, // material properties
+    M149: IGNORE, // temps: C, F
+    M200: IGNORE, // filament size: S0 D1.75
     M201: "accel max",
     M203: "feedrate max",
     M204: "accel",
     M205: "advanced",
     M206: "home offset",
-    M301: "pid tuning",
+    M301: "hot end pid",
+    M304: "bed pid",
+    M412: "filament runout",
+    M413: "power loss",
+    M414: IGNORE, // language font
     M420: "bed leveling",
+    M603: "filament",
     M851: "z probe offset",
+    M808: "repeat count",
     M900: "linear advance",
     M906: "stepper current",
-    M913: "hybrid threshold",
-    M914: "stallguard threshold"
+    M913: "hybrid @",
+    M914: "stallguard @"
 };
 
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
@@ -569,10 +580,26 @@ function init_filedrop() {
 function vids_update() {
     let time = Date.now();
     let img = new Image();
+    // let url = `http://10.10.10.111/camera.jpg?time=${time}`;
     let url = `http://${location.hostname}/camera.jpg?time=${time}`;
+    let now = Date.now();
+    let frame = $('page-vids');
     img.onload = () => {
-        document.documentElement.style.setProperty('--video-url', `url(${url})`);
         vids_timer = setTimeout(vids_update, 1000);
+        frame.innerHTML = '';
+        frame.appendChild(img);
+        let rect = frame.getBoundingClientRect();
+        let { width, height } = img;
+        let arr = rect.width / rect.height;
+        let ari = width / height;
+        let rat = arr / ari;
+        if (width > height) {
+            img.style.height = "100%";
+            img.style.width = `${100 * rat}%`;
+        } else {
+            img.style.width = "100%";
+            img.style.height = `${100 * rat}%`;
+        }
     };
     img.src = url;
 }
@@ -610,6 +637,14 @@ function menu_select(key) {
     }
 }
 
+function set_progress(val) {
+    $('progress').value = val + '%';
+    let rect = $('progress').getBoundingClientRect();
+    let pbar = $('progress-bar');
+    let pval = val ? rect.width * (val / 100) : 0;
+    pbar.style.width = `${pval}px`;
+}
+
 function status_update(status) {
     if (status.state) {
         let state = status.state;
@@ -629,15 +664,7 @@ function status_update(status) {
     }
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
-        $('progress').value = status.print.progress + '%';
-        let brec = $('body').getBoundingClientRect();
-        let rect = $('progress').getBoundingClientRect();
-        let pbar = $('progress-bar');
-        let pval = status.print.run ? rect.width * (status.print.progress/100) : 0;
-        pbar.style.top = `${rect.y - brec.y}px`;
-        pbar.style.left = `${rect.x - brec.x}px`;
-        pbar.style.width = `${pval}px`;
-        pbar.style.height = `${rect.height}px`;
+        set_progress(status.print.run ? status.print.progress : 0);
         if (status.print.clear) {
             $('clear-bed').classList.remove('bg_red');
         } else {
@@ -720,7 +747,9 @@ function status_update(status) {
         let bind = [];
         for (let key in status.settings) {
             let map = status.settings[key];
-            html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
+            let kval = MCODE[key];
+            if (kval === IGNORE) continue;
+            html.push(`<tr class="settings"><th><label>${kval || key}</label></th>`);
             for (let k in map) {
                 let bk = `ep-${key}-${k}`;
                 let bv = [key, k];

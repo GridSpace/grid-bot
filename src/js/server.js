@@ -617,8 +617,9 @@ function on_serial_line(line) {
         status.device.firm.auth = line.substring(line.lastIndexOf('(')+1, line.lastIndexOf(')'));
     }
     // parse M503 settings status
-    if (line.indexOf("echo:  M") === 0) {
-        let toks = line.substring(7).split(' ');
+    line = line.replace(/ +/g,' ');
+    if (line.indexOf("echo: M") >= 0) {
+        let toks = line.substring(6).split(' ');
         let code = toks.shift();
         let map = {};
         toks.forEach(tok => {
