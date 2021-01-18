@@ -860,6 +860,34 @@ function set_mode_fdm() {
     $('ctrl-run-fdm').style.display = '';
 }
 
+function bind_arrow_keys() {
+    document.addEventListener("keydown", function(evt) {
+        if (menu_named === "move" || menu_named === "vids") {
+            let shift = evt.shiftKey;
+            switch (evt.key) {
+                case 'x':
+                    send_safe("G28 X");
+                    break;
+                case 'y':
+                    send_safe("G28 Y");
+                    break;
+                case "ArrowLeft":
+                    jog('X', -1);
+                    break;
+                case "ArrowRight":
+                    jog('X', 1);
+                    break;
+                case "ArrowUp":
+                    jog(shift ? 'Z' : 'Y', 1);
+                    break;
+                case "ArrowDown":
+                    jog(shift ? 'Z' : 'Y', -1);
+                    break;
+            }
+        }
+    });
+}
+
 function init() {
     // bind left menu items and select default
     menu = {
@@ -1111,6 +1139,7 @@ function init() {
     }
     init_filedrop();
     input_deselect();
+    bind_arrow_keys();
     // restore settings
     set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j100"));
     set_jog_speed(parseFloat(settings.jog_speed) || 100, $(settings.jog_speed_sel || "js0100"));
