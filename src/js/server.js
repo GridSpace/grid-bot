@@ -1833,7 +1833,7 @@ if (!port) {
             baud = nbaud;
         }
         if (nmode) {
-            mode = nmode;
+            mode = status.device.mode = nmode;
         }
         startup();
     });

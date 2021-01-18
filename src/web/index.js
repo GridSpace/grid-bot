@@ -89,7 +89,7 @@ function shutdown() {
 }
 
 function runbox() {
-    if (selected && selected.ext === 'g') {
+    if (selected && ["n","g"].indexOf(selected.ext) >= 0) {
         if (confirm(`run boundary for "${selected.file}" @ ${jog_speed} mm/m`)) {
             send(`*runbox ${selected.file} @ ${jog_speed}`);
         }
