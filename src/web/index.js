@@ -673,6 +673,7 @@ function status_update(status) {
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
         set_progress(status.print.run ? status.print.progress : 0);
+        set_progress(status.print.run ? status.print.progress : 0);
         if (status.print.clear) {
             $('clear-bed').classList.remove('bg_red');
         } else {

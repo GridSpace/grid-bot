@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const vernum = "018";
+const vernum = "019";
 const version = `Serial [${vernum}]`;
 
 const LineBuffer = require("./linebuffer");
@@ -41,6 +41,9 @@ let mode = opt.mode || "fdm";
 let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
 let gridlast = '*';
+let extra = opt.extra;
+let noerror = opt.noerror;
+let noexit = opt.noexit;
 
 const STATES = {
     IDLE: "idle",
@@ -258,7 +261,10 @@ function load_config() {
             webport = opt.webport || webport;
             ctrlport = opt.listen || opt.ctrlport || ctrlport;
             webdir = opt.webdir || webdir;
-            debug = opt.debug || debug;
+            debug = opt.debug || debug || false;
+            checksum = opt.checksum || checksum || false;
+            noerror = opt.noerror || noerror || false;
+            noexit = opt.noexit || noexit || false;
         } else {
             onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
             onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
@@ -418,7 +424,9 @@ let wait_time = 10000;
 
 function quiescence_waiter() {
     clearTimeout(wait_quiesce);
-    evtlog(`await quiescence ${wait_counter}, currently ${status.device.lines}`);
+    if (extra) {
+        evtlog(`await quiescence ${wait_counter}, currently ${status.device.lines}`);
+    }
     if (status.device.lines === wait_counter) {
         wait_quiesce = null;
         quiescence = true;
@@ -680,11 +688,13 @@ function on_serial_line(line) {
     if (line.indexOf("Resend:") === 0) {
         let from = line.split(' ')[1];
         evtlog(`resend from ${from}`, {error: true});
-        sport.close();
-        process.exit(-1);
+        if (!noexit) {
+            sport.close();
+            process.exit(-1);
+        }
     }
     // catch fatal errors and reboot
-    if (!opt.noerror && line.indexOf("Error:") === 0) {
+    if (!noerror && line.indexOf("Error:") === 0) {
         status.error = {
             time: Date.now(),
             cause: line.substring(6)
@@ -767,7 +777,7 @@ function clear_dir(dir, remove) {
     }
 }
 
-function send_file(filename) {
+function send_file(filename, tosd) {
     if (!check_device_ready()) {
         return;
     }
@@ -800,16 +810,18 @@ function send_file(filename) {
             mkdir(status.print.outdir);
         }
         let gcode = fs.readFileSync(filename).toString().split("\n");
-        if (sdspool) {
+        if (tosd || sdspool) {
             evtlog(`spooling "${filename} to SD"`);
-            queue(`M28 print.gco`);
+            queue(`M110 N0`);
+            lineno = 1;
+            queue(`M28 print.gco`, { checksum: true });
             gcode.forEach(line => {
-                queue(line);
+                queue(line, { checksum: true });
             });
             queue(`M29`);
-            evtlog(`printing "${filename} from SD"`);
-            queue(`M23 print.gco`);
-            queue(`M24`);
+            // evtlog(`printing "${filename} from SD"`);
+            // queue(`M23 print.gco`);
+            // queue(`M24`);
         } else {
             gcode.forEach(line => {
                 queue(line, {print: true});
@@ -993,7 +1005,9 @@ function process_input_two(line, channel) {
         }
         runbox(path.join(filedir, file), parseInt(opt[1] || 3000));
     } else if (line.indexOf("*send ") === 0) {
-        send_file(line.substring(6));
+        send_file(line.substring(6), false);
+    } else if (line.indexOf("*sendsd ") === 0) {
+        send_file(line.substring(8), true);
     } else if (line.charAt(0) === '!') {
         let ecmd = line.substring(1);
         if (sport) {
@@ -1411,7 +1425,7 @@ function write(line, flags) {
             break;
     }
     if (sport) {
-        if (checksum) {
+        if (checksum || flags.checksum) {
             flags.lineno = lineno;
             status.device.lineno = lineno;
             line = `N${lineno++} ${line}`;
@@ -1808,6 +1822,7 @@ function startup() {
         webport: webport || 'off',
         ctrlport: ctrlport || 'off',
         webdir,
+        checksum,
         version
     });
     add_proc_ctrl();
