@@ -353,6 +353,9 @@ button:active {
     background-color: #eee;
 }
 #settings table {
+    margin: 0;
+    border: 0;
+    padding: 0;
     border-collapse: collapse;
 }
 #settings th,td {
@@ -399,6 +402,14 @@ button:active {
 }
 .grow {
     flex-grow: 1;
+}
+.mh0 {
+    min-height: 0;
+}
+.zero {
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
 }
 .space-around {
     justify-content: space-around;

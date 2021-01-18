@@ -29,6 +29,10 @@ const MCODE = {
     M914: "stallguard @"
 };
 
+const MLINE = {
+    M205: 4
+};
+
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
 let timeout = null;
@@ -748,17 +752,25 @@ function status_update(status) {
         for (let key in status.settings) {
             let map = status.settings[key];
             let kval = MCODE[key];
+            let line = MLINE[key] || 6;
             if (kval === IGNORE) continue;
-            html.push(`<tr class="settings"><th><label>${kval || key}</label></th>`);
-            for (let k in map) {
-                let bk = `ep-${key}-${k}`;
-                let bv = [key, k];
-                html.push(`<th>${k}</th>`);
-                html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
-                valuehash += [k,map[k]].join('');
-                bind.push({bk,bv});
+            let keys = Object.keys(map);
+            let remn = keys.length;
+            while (remn > 0) {
+                let count = line;
+                html.push(`<tr class="settings"><th><label>${kval || key}</label></th>`);
+                while (count-- > 0 && keys.length) {
+                    remn--;
+                    let k = keys.shift();
+                    let bk = `ep-${key}-${k}`;
+                    let bv = [key, k];
+                    html.push(`<th>${k}</th>`);
+                    html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
+                    valuehash += [k,map[k]].join('');
+                    bind.push({bk,bv});
+                }
+                html.push('</tr>');
             }
-            html.push('</tr>');
         }
         html.push('</table>');
         if (valuehash !== last_hash) {
