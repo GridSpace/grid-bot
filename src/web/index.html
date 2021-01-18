@@ -34,8 +34,10 @@
                             </div>
                             <div class="row">
                                 <label>Progress</label>
-                                <input id="progress" disabled="true" class="text-center grow"></input>
-                                <div id="progress-bar"></div>
+                                <div id="progress-box" class="row grow">
+                                    <input id="progress" disabled="true" class="text-center grow"></input>
+                                    <div id="progress-bar"></div>
+                                </div>
                             </div>
                             <div class="row">
                                 <button id="pause" class="grow" onclick="pause()">Pause</button>
@@ -296,7 +298,7 @@
                 <div id="page-ctrl" class="col">
                     <label>Settings</label>
                     <div id="settings" class="col shrink"></div>
-                    <div class="grow"></div>
+                    <div class="grow zero"></div>
                     <label>Actions</label>
                     <div id="actions" class="row">
                         <div class="grow"></div>

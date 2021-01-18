@@ -2,21 +2,40 @@
 
 "use strict";
 
+const IGNORE = 1;
+
 const MCODE = {
     M92:  "steps per",
+    M145: IGNORE, // material properties
+    M149: IGNORE, // temps: C, F
+    M200: IGNORE, // filament size: S0 D1.75
     M201: "accel max",
     M203: "feedrate max",
     M204: "accel",
     M205: "advanced",
     M206: "home offset",
-    M301: "pid tuning",
+    M301: "hot end pid",
+    M304: "bed pid",
+    M412: "filament runout",
+    M413: "power loss",
+    M414: IGNORE, // language font
     M420: "bed leveling",
+    M603: "filament",
     M851: "z probe offset",
+    M808: "repeat count",
     M900: "linear advance",
     M906: "stepper current",
-    M913: "hybrid threshold",
-    M914: "stallguard threshold"
+    M913: "hybrid @",
+    M914: "stallguard @"
 };
+
+const MLINE = {
+    M205: 4
+};
+
+const MKEYS = {
+    M205: [ "X", "Y", "Z", "E", "B", "S", "T" ]
+}
 
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
@@ -569,10 +588,26 @@ function init_filedrop() {
 function vids_update() {
     let time = Date.now();
     let img = new Image();
+    // let url = `http://10.10.10.111/camera.jpg?time=${time}`;
     let url = `http://${location.hostname}/camera.jpg?time=${time}`;
+    let now = Date.now();
+    let frame = $('page-vids');
     img.onload = () => {
-        document.documentElement.style.setProperty('--video-url', `url(${url})`);
         vids_timer = setTimeout(vids_update, 1000);
+        frame.innerHTML = '';
+        frame.appendChild(img);
+        let rect = frame.getBoundingClientRect();
+        let { width, height } = img;
+        let arr = rect.width / rect.height;
+        let ari = width / height;
+        let rat = arr / ari;
+        if (width > height) {
+            img.style.height = "100%";
+            img.style.width = `${100 * rat}%`;
+        } else {
+            img.style.width = "100%";
+            img.style.height = `${100 * rat}%`;
+        }
     };
     img.src = url;
 }
@@ -610,6 +645,14 @@ function menu_select(key) {
     }
 }
 
+function set_progress(val) {
+    $('progress').value = val + '%';
+    let rect = $('progress').getBoundingClientRect();
+    let pbar = $('progress-bar');
+    let pval = val ? rect.width * (val / 100) : 0;
+    pbar.style.width = `${pval}px`;
+}
+
 function status_update(status) {
     if (status.state) {
         let state = status.state;
@@ -629,15 +672,7 @@ function status_update(status) {
     }
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
-        $('progress').value = status.print.progress + '%';
-        let brec = $('body').getBoundingClientRect();
-        let rect = $('progress').getBoundingClientRect();
-        let pbar = $('progress-bar');
-        let pval = status.print.run ? rect.width * (status.print.progress/100) : 0;
-        pbar.style.top = `${rect.y - brec.y}px`;
-        pbar.style.left = `${rect.x - brec.x}px`;
-        pbar.style.width = `${pval}px`;
-        pbar.style.height = `${rect.height}px`;
+        set_progress(status.print.run ? status.print.progress : 0);
         if (status.print.clear) {
             $('clear-bed').classList.remove('bg_red');
         } else {
@@ -720,16 +755,26 @@ function status_update(status) {
         let bind = [];
         for (let key in status.settings) {
             let map = status.settings[key];
-            html.push(`<tr class="settings"><th>${MCODE[key] || key}</th>`);
-            for (let k in map) {
-                let bk = `ep-${key}-${k}`;
-                let bv = [key, k];
-                html.push(`<th>${k}</th>`);
-                html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
-                valuehash += [k,map[k]].join('');
-                bind.push({bk,bv});
+            let kval = MCODE[key];
+            let line = MLINE[key] || 6;
+            if (kval === IGNORE) continue;
+            let keys = (MKEYS[key] || Object.keys(map)).slice();
+            let remn = keys.length;
+            while (remn > 0) {
+                let count = line;
+                html.push(`<tr class="settings"><th><label>${kval || key}</label></th>`);
+                while (count-- > 0 && keys.length) {
+                    remn--;
+                    let k = keys.shift();
+                    let bk = `ep-${key}-${k}`;
+                    let bv = [key, k];
+                    html.push(`<th>${k}</th>`);
+                    html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
+                    valuehash += [k,map[k]].join('');
+                    bind.push({bk,bv});
+                }
+                html.push('</tr>');
             }
-            html.push('</tr>');
         }
         html.push('</table>');
         if (valuehash !== last_hash) {
@@ -829,6 +874,34 @@ function set_mode_fdm() {
     $('file-box').style.display = 'none';
     // control
     $('ctrl-run-fdm').style.display = '';
+}
+
+function bind_arrow_keys() {
+    document.addEventListener("keydown", function(evt) {
+        if (menu_named === "move" || menu_named === "vids") {
+            let shift = evt.shiftKey;
+            switch (evt.key) {
+                case 'x':
+                    send_safe("G28 X");
+                    break;
+                case 'y':
+                    send_safe("G28 Y");
+                    break;
+                case "ArrowLeft":
+                    jog('X', -1);
+                    break;
+                case "ArrowRight":
+                    jog('X', 1);
+                    break;
+                case "ArrowUp":
+                    jog(shift ? 'Z' : 'Y', 1);
+                    break;
+                case "ArrowDown":
+                    jog(shift ? 'Z' : 'Y', -1);
+                    break;
+            }
+        }
+    });
 }
 
 function init() {
@@ -1082,6 +1155,7 @@ function init() {
     }
     init_filedrop();
     input_deselect();
+    bind_arrow_keys();
     // restore settings
     set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j100"));
     set_jog_speed(parseFloat(settings.jog_speed) || 100, $(settings.jog_speed_sel || "js0100"));
