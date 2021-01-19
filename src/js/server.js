@@ -81,9 +81,11 @@ let maxout = 0;                 // high water mark for buffer
 let resend = 0;                 // resend 'ok's waiting for
 let resending = false;          // in resend state machine
 let resend_timer = null;        // timeout catch/restart on resend
+let on_resend_handler = null;   // on resend complete
 let paused = false;             // queue processing paused
 let pause_timer = null;         // during resends, detect pause timeout
 let processing = false;         // queue being drained
+let on_pause_handler = null;    // on pause complete
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
@@ -620,7 +622,7 @@ function on_serial_line(line) {
         // }
         if (resending) {
             if (--resend === 0) {
-                on_resend_handler();
+                setTimeout(on_resend_handler, 150);
             }
             return;
         }
@@ -1259,9 +1261,6 @@ function job_resume() {
     });
     kick_queue();
 };
-
-let on_pause_handler = null;
-let on_resend_handler = null;
 
 function kick_queue() {
     setImmediate(process_queue);
