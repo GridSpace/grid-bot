@@ -67,8 +67,7 @@ let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
 let gridlast = '*';
 let extra = opt.extra;
-let noerror = opt.noerror;
-let noexit = opt.noexit;
+let errend = opt.errend || false;
 
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
@@ -83,6 +82,7 @@ let resend = 0;                 // resend 'ok's waiting for
 let resending = false;          // in resend state machine
 let resend_timer = null;        // timeout catch/restart on resend
 let paused = false;             // queue processing paused
+let pause_timer = null;         // during resends, detect pause timeout
 let processing = false;         // queue being drained
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
@@ -268,8 +268,7 @@ function load_config() {
             webdir = opt.webdir || webdir;
             debug = opt.debug || debug || false;
             checksum = opt.checksum || checksum || false;
-            noerror = opt.noerror || noerror || false;
-            noexit = opt.noexit || noexit || false;
+            errend = opt.errend || errend || false;
         } else {
             onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
             onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
@@ -317,6 +316,14 @@ function lastmod(file) {
     }
 }
 
+function lpad(val, len, ch) {
+    let str = val.toString();
+    while (str.length < len) {
+        str = ch + str;
+    }
+    return str;
+};
+
 function cmdlog(line, flags) {
     if (debug) {
         return;
@@ -327,7 +334,14 @@ function cmdlog(line, flags) {
     if (typeof(line) === 'object') {
         line = JSON.stringify(line);
     }
-    emit("[" + waiting + ":" + bufmax + "," + buf.length + ":" + maxout + "] " + line, flags);
+    let signs = [
+        waiting === bufmax ? 'B' : ' ',    // blocked
+        buf.length === maxout ? 'H' : ' '  // high-water mark
+    ].join('');
+    let bufrem = lpad(buf.length, maxout.toString().length, '0');
+    let collen = lpad(collect ? collect.length : 0, 2, '0');
+    emit(`[${signs}|${waiting},${bufrem},${collen}] ${line}`, flags);
+    // emit("[" + waiting + ":" + bufmax + "," + buf.length + ":" + maxout + "] " + line, flags);
 };
 
 // send *** message *** to all clients (not stdout unless stdin specified)
@@ -335,7 +349,7 @@ function evtlog(line, flags) {
     if (typeof(line) === 'object') {
         line = JSON.stringify(line);
     }
-    emit("*** " + line + " ***", flags);
+    emit(`*** ${line} ***`, flags);
 };
 
 // find the port with the controller
@@ -388,9 +402,9 @@ function on_serial_port() {
             lineno = 1;
             starting = false;
             quiescence = false;
-            // wait up to 3 seconds on new open for device input.
+            // wait up to 2 seconds on new open for device input.
             // if no input received, call on_quiescence() which causes
-            // a "bump boot". wait up to 3 more seconds and if no input
+            // a "bump boot". wait up to 2 more seconds and if no input
             // then close the port which will re-start the whole cycle.
             setTimeout(() => {
                 if (status.device.lines === 0) {
@@ -401,9 +415,9 @@ function on_serial_port() {
                             evtlog("device not responding. reopening port.");
                             sport.close();
                         }
-                    }, 3000);
+                    }, 2000);
                 }
-            }, 3000);
+            }, 2000);
         })
         .on('error', function(error) {
             sport = null;
@@ -456,11 +470,7 @@ function on_quiescence() {
             return process.exit(1);
         }
         evtlog("bump boot");
-        if (!grbl) {
-            // sport.write('\r\nM110 N0\r\n');
-            // sport.flush();
-            // onboot.push('M503')
-        }
+        // fake/inject 8-bit board response on serial open
         on_serial_line('start');
         status.device.firm.ver = 'new';
         status.device.firm.auth = 'new';
@@ -474,14 +484,15 @@ function on_quiescence() {
         queue(cmd);
     });
     onboot = [];
-    // allow remote spooling
-    // grid_spool();
 }
 
 // handle a single line of serial input
 function on_serial_line(line) {
     line = line.toString().trim();
-    let raw_line = line;
+
+    if (debug) {
+        console.log(`<<- ${line}`);
+    }
 
     // on first line, setup a quiescence timer
     if (status.device.lines++ === 0) {
@@ -489,15 +500,6 @@ function on_serial_line(line) {
         wait_quiesce = setTimeout(quiescence_waiter, 2000);
     } else if (wait_quiesce) {
         quiescence_waiter();
-    }
-
-    if (debug) {
-        if (paused) {
-            console.log(`<<< ${raw_line}`);
-        } else {
-            let cmd = (match[0] || {line:''}).line;
-            console.log("<... " + (cmd ? cmd + " -- " + line : line));
-        }
     }
 
     status.device.line = Date.now();
@@ -508,26 +510,27 @@ function on_serial_line(line) {
 
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
-        let from = parseInt(line.split(' ')[1]);
-        evtlog(`resend from ${from}`, {error: true});
-        console.log({line: raw_line.toString()});
-        console.log('match ===', match);
         if (!resending) {
+            let from = parseInt(line.split(' ')[1]);
+            evtlog(`resend from ${from}`);
             while (match.length && match[0].flags.lineno < from) {
-                console.log('discard', match[0]);
+                console.log('resend discard', match[0]);
                 match.shift();
             }
+            // it's possible to discard the entire match stack
             if (match.length === 0) {
                 return;
             }
-            resend = match.length - 1; // because first ok skipped / errored
+            // because first ok skipped / errored
+            resend = match.length - 1;
             let saved = match.slice();
             resending = true;
             paused = true;
-            debug = true;
+            // debug = true;
             on_resend_handler = () => {
+                clearTimeout(pause_timer);
                 clearTimeout(resend_timer);
-                console.log({restart: saved})
+                // evtlog({restarting: saved.length})
                 resending = false;
                 resend = 0;
                 match = saved;
@@ -537,28 +540,25 @@ function on_serial_line(line) {
                 }
                 on_pause_handler = () => {
                     paused = false;
-                    debug = false;
-                    process_queue();
+                    // debug = false;
+                    kick_queue();
                 };
-                setTimeout(() => {
+                pause_timer = setTimeout(() => {
                     if (paused) {
-                        console.log('no pause expire', {paused, resend, waiting});
+                        console.log('resend pause wait expire', {paused, resend, waiting});
                     }
                 }, 2000);
             };
+            clearTimeout(pause_timer);
             clearTimeout(resend_timer);
             resend_timer = setTimeout(() => {
                 if (resend) {
-                    console.log('resend expire', {resend, paused, debug, waiting});
+                    // console.log('resend expire', {resend, paused, debug, waiting});
                     on_resend_handler();
                 } else {
-                    console.log({resend_ok: saved});
+                    // console.log({resend_ok: saved});
                 }
-            }, 2000);
-        }
-        if (!noexit) {
-            sport.close();
-            process.exit(-1);
+            }, 1000);
         }
         return;
     }
@@ -569,29 +569,26 @@ function on_serial_line(line) {
             time: Date.now(),
             cause: line.substring(6)
         };
-        if (!resend) {
+        if (!resending) {
             evtlog(line, {error: true});
         }
-        if (!noerror) {
+        if (errend) {
             try {
                 sport.close();
                 onboot = onerror;
-            } catch (e) { }
+            } catch (e) {
+                console.log("port close error", e);
+            }
             if (opt.fragile) {
-                if (debug) {
-                    console.log({status});
-                    process.exit(-1);
-                }
+                console.log({status});
+                process.exit(-1);
             }
         }
         return;
     }
 
-    let istemp = false;
-    let update = false;
     // parse M105/M155 temperature updates
     if (line.indexOf("T:") === 0) {
-        istemp = true;
         // eliminate spaces before slashes " /"
         let toks = line.replace(/ \//g,'/').split(' ');
         // parse extruder/bed temps
@@ -602,23 +599,25 @@ function on_serial_line(line) {
                     tok = tok[1].split("/");
                     status.temp.ext[0] = parseFloat(tok[0]);
                     status.target.ext[0] = parseFloat(tok[1]);
-                    update = true;
+                    status.update = true;
                     break;
                 case 'B':
                     tok = tok[1].split("/");
                     status.temp.bed = parseFloat(tok[0]);
                     status.target.bed = parseFloat(tok[1]);
-                    update = true;
+                    status.update = true;
                     break;
             }
         });
+        kick_queue();
+        return;
     }
 
     let matched = false;
     if (line.indexOf("ok") === 0) {
-        if (paused) {
-            console.log({line, match:match[0], waiting, resend});
-        }
+        // if (paused) {
+        //     console.log({paused, resend});
+        // }
         if (resending) {
             if (--resend === 0) {
                 on_resend_handler();
@@ -626,6 +625,7 @@ function on_serial_line(line) {
             return;
         }
         // match output to an initiating command (from a queue)
+        // after "start" there is no collecting until first "ok"
         if (collect) {
             line = line.substring(3);
             collect.push(line);
@@ -634,6 +634,7 @@ function on_serial_line(line) {
         let from = matched ? matched.line : "???";
         let flags = matched ? matched.flags : {};
         // if checksumming is enabled, lines start with Nxxxx
+        // and must match the stored output record
         if (line.charAt(0) === 'N') {
             let lno = parseInt(line.split(' ')[0].substring(1));
             if (lno !== flags.lineno) {
@@ -646,7 +647,7 @@ function on_serial_line(line) {
         }
         // emit collected lines
         if (collect && collect.length) {
-            if (collect.length >= 4) {
+            if (collect.length >= 2) {
                 cmdlog("==> " + from, flags);
                 collect.forEach((el, i) => {
                     if (i === 0) {
@@ -665,13 +666,12 @@ function on_serial_line(line) {
             on_pause_handler = null;
             do_handler();
         }
-        if (status.update) {
-            status.update = false;
-        }
+        // why??
+        status.update = false;
         collect = [];
-    } else if (collect && !istemp) {
+    } else if (collect) {
         collect.push(line);
-    } else if (!istemp) {
+    } else {
         cmdlog("<-- " + line, {matched});
     }
 
@@ -686,8 +686,8 @@ function on_serial_line(line) {
     // 8-bit marlin systems send "start" on a serial port open
     if (line === "start") {
         lineno = 1;
-        update = true;
         starting = true;
+        status.update = true;
         status.device.ready = true;
         status.device.boot = Date.now();
         status.buffer.waiting = waiting = 0;
@@ -709,7 +709,7 @@ function on_serial_line(line) {
                 // do not overwrite value (Z: comes twice, for example)
                 if (!pos[tok[0]]) {
                     pos[tok[0]] = parseFloat(tok[1]);
-                    update = true;
+                    status.update = true;
                 }
             } else {
                 done = true;
@@ -720,11 +720,11 @@ function on_serial_line(line) {
     // parse M119 endstop status
     if (line.indexOf("_min:") > 0) {
         status.estop.min[line.substring(0,1)] = line.substring(6);
-        update = true;
+        status.update = true;
     }
     if (line.indexOf("_max:") > 0) {
         status.estop.max[line.substring(0,1)] = line.substring(6);
-        update = true;
+        status.update = true;
     }
 
     // parse Marlin version
@@ -747,7 +747,7 @@ function on_serial_line(line) {
             map[tok.substring(0,1)] = parseFloat(tok.substring(1));
         });
         status.settings[code] = map;
-        update = true;
+        status.update = true;
     }
 
     // parse M115 output
@@ -812,11 +812,7 @@ function on_serial_line(line) {
         }
     }
 
-    if (update) {
-        status.update = true;
-    }
-
-    process_queue();
+    kick_queue();
 }
 
 function bed_clear() {
@@ -914,7 +910,7 @@ function send_file(filename, tosd) {
             // queue(`M24`);
         } else {
             gcode.forEach(line => {
-                queue(line, {print: true});
+                queue(line, {print: true, checksum: true});
             });
         }
         queue(`M155 S2`);
@@ -1108,7 +1104,12 @@ function process_input_two(line, channel) {
             evtlog(`missing port for emergency command: ${ecmd}`);
         }
     } else if (line.charAt(0) !== "*") {
-        queue_priority(line, channel);
+        let cksum = false;
+        if (line.charAt(0) === '#') {
+            cksum = true;
+            line = line.substring(1);
+        }
+        queue_priority(line, channel, cksum);
     } else {
         evtlog(`invalid command "${line.substring(1)}"`, {channel});
     }
@@ -1244,7 +1245,7 @@ function pause_handler() {
     onpause.forEach(cmd => {
         queue(cmd, {onpause: true, priority: true});
     });
-    process_queue();
+    kick_queue();
 }
 
 function job_resume() {
@@ -1256,11 +1257,15 @@ function job_resume() {
     onresume.forEach(cmd => {
         queue(cmd, {priority: true});
     });
-    process_queue();
+    kick_queue();
 };
 
 let on_pause_handler = null;
 let on_resend_handler = null;
+
+function kick_queue() {
+    setImmediate(process_queue);
+}
 
 function process_queue() {
     if (processing) {
@@ -1350,8 +1355,8 @@ function queue(line, flags) {
     }
 };
 
-function queue_priority(line, channel) {
-    queue(line, {priority: true, channel});
+function queue_priority(line, channel, checksum) {
+    queue(line, {priority: true, channel, checksum});
 }
 
 function tokenize_line(line) {
@@ -1521,18 +1526,14 @@ function write(line, flags) {
             flags.lineno = lineno;
             status.device.lineno = lineno;
             line = cksum(line, lineno++);
-            // line = `N${lineno++} ${line}`;
-            // let cksum = 0;
-            // Buffer.from(line).forEach(ch => {
-            //     cksum = cksum ^ ch;
-            // });
-            // line = `${line}*${cksum}`;
         }
-        if (debug) console.log("...> " + line);
-        cmdlog("--> " + line, flags);
+        if (debug) {
+            console.log(`->> ${line}`);
+        }
+        cmdlog(`--> ${line}`, flags);
         sport.write(`${line}\n`);
     } else {
-        evtlog("serial port missing: " + line, flags);
+        evtlog(`serial port missing: ${line}`, flags);
     }
 }
 
