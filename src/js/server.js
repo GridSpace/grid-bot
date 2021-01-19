@@ -32,19 +32,6 @@ const WebSocket = require('ws');
 const bedclear = "etc/bedclear";
 const oport = opt.device || opt.port || opt._[0]; // serial port device path
 
-let baud = parseInt(opt.baud || "250000");      // baud rate for serial port
-let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
-let webdir = opt.webdir || "src/web";
-let webport = parseInt(opt.web || opt.webport || 4080) || 0;
-let grid = opt.grid || "https://live.grid.space";
-let mode = opt.mode || "fdm";
-let grbl = opt.grbl ? true : false;
-let ctrlport = opt.listen;
-let gridlast = '*';
-let extra = opt.extra;
-let noerror = opt.noerror;
-let noexit = opt.noexit;
-
 const STATES = {
     IDLE: "idle",
     NODEVICE: "no controller",
@@ -70,6 +57,19 @@ const MCODE = {
     M914: "stallguard"
 };
 
+let baud = parseInt(opt.baud || "250000");      // baud rate for serial port
+let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
+let webdir = opt.webdir || "src/web";
+let webport = parseInt(opt.web || opt.webport || 4080) || 0;
+let grid = opt.grid || "https://live.grid.space";
+let mode = opt.mode || "fdm";
+let grbl = opt.grbl ? true : false;
+let ctrlport = opt.listen;
+let gridlast = '*';
+let extra = opt.extra;
+let noerror = opt.noerror;
+let noexit = opt.noexit;
+
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
 let port = oport;               // default port (possible to probe)
@@ -79,6 +79,9 @@ let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
 let waiting = 0;                // unack'd output lines
 let maxout = 0;                 // high water mark for buffer
+let resend = 0;                 // resend 'ok's waiting for
+let resending = false;          // in resend state machine
+let resend_timer = null;        // timeout catch/restart on resend
 let paused = false;             // queue processing paused
 let processing = false;         // queue being drained
 let cancel = false;             // job cancel requested
@@ -96,6 +99,8 @@ let extrude = true;             // enable / disable extrusion
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
 let onboot_fdm = [
+    "M29",              // close out any SD writes
+    "M110 N0",          // reset checksum line number
     "M155 S2",          // report temp every 2 seconds
     "M115",             // get firmware info
     "M211",             // get endstop boundaries
@@ -452,9 +457,9 @@ function on_quiescence() {
         }
         evtlog("bump boot");
         if (!grbl) {
-            sport.write('\r\nM110 N0\r\n');
-            sport.flush();
-            onboot.push('M503')
+            // sport.write('\r\nM110 N0\r\n');
+            // sport.flush();
+            // onboot.push('M503')
         }
         on_serial_line('start');
         status.device.firm.ver = 'new';
@@ -475,6 +480,9 @@ function on_quiescence() {
 
 // handle a single line of serial input
 function on_serial_line(line) {
+    line = line.toString().trim();
+    let raw_line = line;
+
     // on first line, setup a quiescence timer
     if (status.device.lines++ === 0) {
         wait_counter = status.device.lines;
@@ -482,16 +490,103 @@ function on_serial_line(line) {
     } else if (wait_quiesce) {
         quiescence_waiter();
     }
+
     if (debug) {
-        let cmd = (match[0] || {line:''}).line;
-        console.log("<... " + (cmd ? cmd + " -- " + line : line));
+        if (paused) {
+            console.log(`<<< ${raw_line}`);
+        } else {
+            let cmd = (match[0] || {line:''}).line;
+            console.log("<... " + (cmd ? cmd + " -- " + line : line));
+        }
     }
+
     status.device.line = Date.now();
-    line = line.toString().trim();
+
     if (line.length === 0) {
         return;
     }
-    let matched = false;
+
+    // resend on checksum errors
+    if (line.indexOf("Resend:") === 0) {
+        let from = parseInt(line.split(' ')[1]);
+        evtlog(`resend from ${from}`, {error: true});
+        console.log({line: raw_line.toString()});
+        console.log('match ===', match);
+        if (!resending) {
+            while (match.length && match[0].flags.lineno < from) {
+                console.log('discard', match[0]);
+                match.shift();
+            }
+            if (match.length === 0) {
+                return;
+            }
+            resend = match.length - 1; // because first ok skipped / errored
+            let saved = match.slice();
+            resending = true;
+            paused = true;
+            debug = true;
+            on_resend_handler = () => {
+                clearTimeout(resend_timer);
+                console.log({restart: saved})
+                resending = false;
+                resend = 0;
+                match = saved;
+                waiting = match.length;
+                for (let rec of match) {
+                    sport.write(`${cksum(rec.line, rec.flags.lineno)}\n`);
+                }
+                on_pause_handler = () => {
+                    paused = false;
+                    debug = false;
+                    process_queue();
+                };
+                setTimeout(() => {
+                    if (paused) {
+                        console.log('no pause expire', {paused, resend, waiting});
+                    }
+                }, 2000);
+            };
+            clearTimeout(resend_timer);
+            resend_timer = setTimeout(() => {
+                if (resend) {
+                    console.log('resend expire', {resend, paused, debug, waiting});
+                    on_resend_handler();
+                } else {
+                    console.log({resend_ok: saved});
+                }
+            }, 2000);
+        }
+        if (!noexit) {
+            sport.close();
+            process.exit(-1);
+        }
+        return;
+    }
+
+    // catch errors and report if not in a resend situation
+    if (line.indexOf("Error:") === 0) {
+        status.error = {
+            time: Date.now(),
+            cause: line.substring(6)
+        };
+        if (!resend) {
+            evtlog(line, {error: true});
+        }
+        if (!noerror) {
+            try {
+                sport.close();
+                onboot = onerror;
+            } catch (e) { }
+            if (opt.fragile) {
+                if (debug) {
+                    console.log({status});
+                    process.exit(-1);
+                }
+            }
+        }
+        return;
+    }
+
     let istemp = false;
     let update = false;
     // parse M105/M155 temperature updates
@@ -518,9 +613,20 @@ function on_serial_line(line) {
             }
         });
     }
-    if (line.indexOf("ok") === 0 || line.indexOf("error:") === 0) {
+
+    let matched = false;
+    if (line.indexOf("ok") === 0) {
+        if (paused) {
+            console.log({line, match:match[0], waiting, resend});
+        }
+        if (resending) {
+            if (--resend === 0) {
+                on_resend_handler();
+            }
+            return;
+        }
         // match output to an initiating command (from a queue)
-        if (line.indexOf("ok ") === 0 && collect) {
+        if (collect) {
             line = line.substring(3);
             collect.push(line);
         }
@@ -568,11 +674,13 @@ function on_serial_line(line) {
     } else if (!istemp) {
         cmdlog("<-- " + line, {matched});
     }
+
     // force output of eeprom settings because it doesn't happen under these conditions
     if (line.indexOf("echo:EEPROM version mismatch") === 0) {
         evtlog("M503 on eeprom version mismatch");
         write("M503");
     }
+
     // status.buffer.match = match;
     status.buffer.collect = collect;
     // 8-bit marlin systems send "start" on a serial port open
@@ -587,6 +695,7 @@ function on_serial_line(line) {
         match = [];
         buf = [];
     }
+
     // parse M114 x/y/z/e positions
     if (line.indexOf("X:") === 0) {
         let pos = status.pos = { stack:[] };
@@ -607,6 +716,7 @@ function on_serial_line(line) {
             }
         });
     }
+
     // parse M119 endstop status
     if (line.indexOf("_min:") > 0) {
         status.estop.min[line.substring(0,1)] = line.substring(6);
@@ -616,14 +726,17 @@ function on_serial_line(line) {
         status.estop.max[line.substring(0,1)] = line.substring(6);
         update = true;
     }
+
     // parse Marlin version
     if (line.indexOf("echo:Marlin") === 0) {
         status.device.firm.ver = line.split(' ')[1];
     }
+
     // parse last compile info
     if (line.indexOf("echo: Last Updated") === 0) {
         status.device.firm.auth = line.substring(line.lastIndexOf('(')+1, line.lastIndexOf(')'));
     }
+
     // parse M503 settings status
     line = line.replace(/ +/g,' ');
     if (line.indexOf("echo: M") >= 0) {
@@ -636,6 +749,7 @@ function on_serial_line(line) {
         status.settings[code] = map;
         update = true;
     }
+
     // parse M115 output
     if (line.indexOf("FIRMWARE_NAME:") === 0) {
         let fni = line.indexOf("FIRMWARE_NAME:");
@@ -649,6 +763,7 @@ function on_serial_line(line) {
             status.device.firm.auth = line.substring(mti + 13, eci).trim();
         }
     }
+
     // parse M211 output
     if (line.indexOf("echo:Soft endstops:") >= 0) {
         let minpos = line.indexOf("Min:");
@@ -668,10 +783,12 @@ function on_serial_line(line) {
                 });
         }
     }
+
     if (line.indexOf("Grbl 1.1") === 0 && mode === 'cnc') {
         evtlog(`enabling grbl support`);
         status.device.grbl = grbl = true;
     }
+
     // parse GRBL position
     if (line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
         let gopt = status.grbl;
@@ -684,37 +801,7 @@ function on_serial_line(line) {
         status.pos.Y = gopt.pos[1] - gopt.wco[1];
         status.pos.Z = gopt.pos[2] - gopt.wco[2];
     }
-    // resend on checksum errors
-    if (line.indexOf("Resend:") === 0) {
-        let from = line.split(' ')[1];
-        evtlog(`resend from ${from}`, {error: true});
-        if (!noexit) {
-            sport.close();
-            process.exit(-1);
-        }
-    }
-    // catch fatal errors and reboot
-    if (!noerror && line.indexOf("Error:") === 0) {
-        status.error = {
-            time: Date.now(),
-            cause: line.substring(6)
-        };
-        evtlog(line, {error: true});
-        if (line.indexOf("Error:checksum mismatch") === 0) {
-            // ignore then act on 'Resend:'
-        } else {
-            try {
-                sport.close();
-                onboot = onerror;
-            } catch (e) { }
-            if (opt.fragile) {
-                if (debug) {
-                    console.log({status});
-                    process.exit(-1);
-                }
-            }
-        }
-    }
+
     // catch processing errors and reboot
     if (opt.fragile && line.indexOf("Unknown command:") >= 0) {
         evtlog(`fatal: ${line}`, {error: true});
@@ -724,9 +811,11 @@ function on_serial_line(line) {
             process.exit(-1);
         }
     }
+
     if (update) {
         status.update = true;
     }
+
     process_queue();
 }
 
@@ -809,6 +898,7 @@ function send_file(filename, tosd) {
         } else {
             mkdir(status.print.outdir);
         }
+        queue(`M155 S0`);
         let gcode = fs.readFileSync(filename).toString().split("\n");
         if (tosd || sdspool) {
             evtlog(`spooling "${filename} to SD"`);
@@ -827,6 +917,7 @@ function send_file(filename, tosd) {
                 queue(line, {print: true});
             });
         }
+        queue(`M155 S2`);
     } catch (e) {
         evtlog("error sending file", {error: true});
         console.log(e);
@@ -1169,6 +1260,7 @@ function job_resume() {
 };
 
 let on_pause_handler = null;
+let on_resend_handler = null;
 
 function process_queue() {
     if (processing) {
@@ -1428,12 +1520,13 @@ function write(line, flags) {
         if (checksum || flags.checksum) {
             flags.lineno = lineno;
             status.device.lineno = lineno;
-            line = `N${lineno++} ${line}`;
-            let cksum = 0;
-            Buffer.from(line).forEach(ch => {
-                cksum = cksum ^ ch;
-            });
-            line = `${line}*${cksum}`;
+            line = cksum(line, lineno++);
+            // line = `N${lineno++} ${line}`;
+            // let cksum = 0;
+            // Buffer.from(line).forEach(ch => {
+            //     cksum = cksum ^ ch;
+            // });
+            // line = `${line}*${cksum}`;
         }
         if (debug) console.log("...> " + line);
         cmdlog("--> " + line, flags);
@@ -1441,6 +1534,15 @@ function write(line, flags) {
     } else {
         evtlog("serial port missing: " + line, flags);
     }
+}
+
+function cksum(line, lineno) {
+    let tmp = `N${lineno} ${line}`;
+    let cksum = 0;
+    Buffer.from(tmp).forEach(ch => {
+        cksum = cksum ^ ch;
+    });
+    return `${tmp}*${cksum}`;
 }
 
 let known = {}; // known files
