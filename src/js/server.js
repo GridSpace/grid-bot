@@ -57,10 +57,10 @@ const MCODE = {
     M914: "stallguard"
 };
 
-let baud = parseInt(opt.baud || "250000");      // baud rate for serial port
-let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
-let webdir = opt.webdir || "src/web";
+let baud = parseInt(opt.baud || "250000");
 let webport = parseInt(opt.web || opt.webport || 4080) || 0;
+let webdir = opt.webdir || "src/web";
+let filedir = opt.dir || opt.filedir || `${process.cwd()}/tmp`;
 let grid = opt.grid || "https://live.grid.space";
 let mode = opt.mode || "fdm";
 let grbl = opt.grbl ? true : false;
@@ -100,10 +100,16 @@ let sport = null;               // bound serial port
 let upload = null;              // name of file being uploaded
 let debug = opt.debug;          // debug and dump all data
 let extrude = true;             // enable / disable extrusion
+let wait_quiesce = null;
+let wait_counter = 0;
+let wait_time = 10000;
+let printCache = {};            // cache of print
+let known = {};                 // known files
+
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
 let onboot_fdm = [
-    "M29",              // close out any SD writes
+    "M29",              // close out any open SD writes
     "M110 N0",          // reset checksum line number
     "M155 S2",          // report temp every 2 seconds
     "M115",             // get firmware info
@@ -439,10 +445,6 @@ function on_serial_port() {
             status.state = STATES.NODEVICE;
         });
 }
-
-let wait_quiesce = null;
-let wait_counter = 0;
-let wait_time = 10000;
 
 function quiescence_waiter() {
     clearTimeout(wait_quiesce);
@@ -1559,9 +1561,6 @@ function cksum(line, lineno) {
     });
     return `${tmp}*${cksum}`;
 }
-
-let known = {}; // known files
-let printCache = {}; // cache of print
 
 /** scan file drop dir for reporting to client(s) */
 function check_file_dir(once) {
