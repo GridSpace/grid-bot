@@ -86,6 +86,7 @@ let paused = false;             // queue processing paused
 let pause_timer = null;         // during resends, detect pause timeout
 let processing = false;         // queue being drained
 let on_pause_handler = null;    // on pause complete
+let sdsend = false;             // true if saving to SD
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
@@ -93,6 +94,7 @@ let dircache = [];              // cache of files in watched directory
 let clients = [];               // connected clients
 let buf = [];                   // output line buffer
 let match = [];                 // queue for matching command with response
+let histo = [];                 // lookback command history
 let collect = null;             // collect lines between oks
 let sport = null;               // bound serial port
 let upload = null;              // name of file being uploaded
@@ -327,23 +329,22 @@ function lpad(val, len, ch) {
 };
 
 function cmdlog(line, flags) {
-    if (debug) {
-        return;
-    }
-    if (flags && flags.print && !opt.verbose) {
+    if (!debug && flags && flags.print && !opt.verbose) {
         return;
     }
     if (typeof(line) === 'object') {
         line = JSON.stringify(line);
     }
+    let pc = ' ';
     let signs = [
-        waiting === bufmax ? 'B' : ' ',    // blocked
-        buf.length === maxout ? 'H' : ' '  // high-water mark
+        resending? 'R' : pc,               // resending
+        paused ? 'P' : pc,                 // paused
+        waiting === bufmax ? 'B' : pc,     // blocked
+        buf.length === maxout ? 'H' : pc   // high-water mark
     ].join('');
-    let bufrem = lpad(buf.length, maxout.toString().length, '0');
-    let collen = lpad(collect ? collect.length : 0, 2, '0');
-    emit(`[${signs}|${waiting},${bufrem},${collen}] ${line}`, flags);
-    // emit("[" + waiting + ":" + bufmax + "," + buf.length + ":" + maxout + "] " + line, flags);
+    let bufrem = lpad(buf.length, maxout.toString().length, pc);
+    let collen = lpad(collect ? collect.length : 0, 2, pc);
+    emit(`[${signs},${waiting},${bufrem},${collen}] ${line}`, flags);
 };
 
 // send *** message *** to all clients (not stdout unless stdin specified)
@@ -374,12 +375,12 @@ function probe_serial(then) {
                 nport = port.comnName;
             }
             // sainsmart genmitsu
-            if (nport && vendorId === '1a86' && productId === '7523') {
-                console.log(`--- found SainSmart Genmitsu 3018 ---`);
-                nbaud = 115200;
-                nmode = 'cnc';
-                break;
-            }
+            // if (nport && vendorId === '1a86' && productId === '7523') {
+            //     console.log(`--- found SainSmart Genmitsu 3018 ---`);
+            //     nbaud = 115200;
+            //     nmode = 'cnc';
+            //     break;
+            // }
         }
         then(nport, nbaud, nmode);
     });
@@ -492,10 +493,6 @@ function on_quiescence() {
 function on_serial_line(line) {
     line = line.toString().trim();
 
-    if (debug) {
-        console.log(`<<- ${line}`);
-    }
-
     // on first line, setup a quiescence timer
     if (status.device.lines++ === 0) {
         wait_counter = status.device.lines;
@@ -510,11 +507,22 @@ function on_serial_line(line) {
         return;
     }
 
+    if (debug) {
+        cmdlog(`<<- ${line}`, match.length ? match[0].flags : {});
+    }
+
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
         if (!resending) {
             let from = parseInt(line.split(' ')[1]);
-            evtlog(`resend from ${from}`);
+            if (!debug) {
+                evtlog(`resend from ${from}`);
+            }
+            if (match.length === 0 || from < match[0].flags.lineno) {
+                let rerun = histo.filter(h => h.flags.lineno >= from);
+                console.log('resend from history', rerun);
+                match = rerun;
+            } else
             while (match.length && match[0].flags.lineno < from) {
                 console.log('resend discard', match[0]);
                 match.shift();
@@ -538,7 +546,11 @@ function on_serial_line(line) {
                 match = saved;
                 waiting = match.length;
                 for (let rec of match) {
-                    sport.write(`${cksum(rec.line, rec.flags.lineno)}\n`);
+                    let rout = cksum(rec.line, rec.flags.lineno);
+                    sport.write(`${rout}\n`);
+                    if (debug) {
+                        cmdlog(`=>> ${rout}`, match.length ? match[0].flags : {});
+                    }
                 }
                 on_pause_handler = () => {
                     paused = false;
@@ -571,7 +583,7 @@ function on_serial_line(line) {
             time: Date.now(),
             cause: line.substring(6)
         };
-        if (!resending) {
+        if (!debug && !resending) {
             evtlog(line, {error: true});
         }
         if (errend) {
@@ -617,12 +629,9 @@ function on_serial_line(line) {
 
     let matched = false;
     if (line.indexOf("ok") === 0) {
-        // if (paused) {
-        //     console.log({paused, resend});
-        // }
         if (resending) {
             if (--resend === 0) {
-                setTimeout(on_resend_handler, 150);
+                setTimeout(on_resend_handler, 500);
             }
             return;
         }
@@ -648,7 +657,7 @@ function on_serial_line(line) {
             flags.callback(collect, matched.line);
         }
         // emit collected lines
-        if (collect && collect.length) {
+        if (!debug && collect && collect.length) {
             if (collect.length >= 2) {
                 cmdlog("==> " + from, flags);
                 collect.forEach((el, i) => {
@@ -673,8 +682,6 @@ function on_serial_line(line) {
         collect = [];
     } else if (collect) {
         collect.push(line);
-    } else {
-        cmdlog("<-- " + line, {matched});
     }
 
     // force output of eeprom settings because it doesn't happen under these conditions
@@ -896,12 +903,13 @@ function send_file(filename, tosd) {
         } else {
             mkdir(status.print.outdir);
         }
+        sdsend = true;
         queue(`M155 S0`);
         let gcode = fs.readFileSync(filename).toString().split("\n");
         if (tosd || sdspool) {
+            lineno = 1;
             evtlog(`spooling "${filename} to SD"`);
             queue(`M110 N0`);
-            lineno = 1;
             queue(`M28 print.gco`, { checksum: true });
             gcode.forEach(line => {
                 queue(line, { checksum: true });
@@ -1286,19 +1294,24 @@ function process_queue() {
         write(line,flags);
     }
     if (cancel || buf.length === 0) {
-        maxout = 0;
+        status.buffer.max = maxout = 0;
+        if (sdsend && cancel) {
+            queue("M29");
+        }
+        sdsend = false;
         if (status.print.run) {
             status.print.end = Date.now();
             status.print.run = false;
             status.print.pause = false;
             status.state = STATES.IDLE;
+            let minutes = ((status.print.end - status.print.start) / 60000).toFixed(2);
             if (status.print.cancel) {
-                evtlog(`job cancelled ${status.print.filename} after ${((status.print.end - status.print.start) / 60000)} min`);
+                evtlog(`job cancelled ${status.print.filename} after ${minutes} min`);
             } else if (status.print.abort) {
-                evtlog(`job aborted ${status.print.filename} after ${((status.print.end - status.print.start) / 60000)} min`);
+                evtlog(`job aborted ${status.print.filename} after ${minutes} min`);
             } else {
                 status.print.progress = "100.00";
-                evtlog(`job done ${status.print.filename} in ${((status.print.end - status.print.start) / 60000)} min`);
+                evtlog(`job done ${status.print.filename} in ${minutes} min`);
             }
             let fn = status.print.filename;
             let lp = fn.lastIndexOf(".");
@@ -1346,7 +1359,7 @@ function queue(line, flags) {
             buf.push({line, flags});
         }
         status.buffer.queue = buf.length;
-        maxout = Math.max(maxout, buf.length);
+        status.buffer.max = maxout = Math.max(maxout, buf.length);
     }
     if (returnHome) {
         queue('G0 X0.5 Y0.5 F9000', flags);
@@ -1391,9 +1404,6 @@ function tokenize_line(line) {
 }
 
 function write(line, flags) {
-    // if (paused) {
-    //     console.trace({write_paused: line, flags});
-    // }
     if (!line) {
         console.trace("missing line", line, flags);
         return;
@@ -1516,6 +1526,10 @@ function write(line, flags) {
                 return job_pause(toks[1]);
             }
             match.push({line, flags});
+            histo.push({line, flags});
+            while (histo.length > 20) {
+                histo.shift();
+            }
             waiting++;
             status.buffer.waiting = waiting;
             break;
@@ -1527,9 +1541,10 @@ function write(line, flags) {
             line = cksum(line, lineno++);
         }
         if (debug) {
-            console.log(`->> ${line}`);
+            cmdlog(`->> ${line}`, flags);
+        } else {
+            cmdlog(`--> ${line}`, flags);
         }
-        cmdlog(`--> ${line}`, flags);
         sport.write(`${line}\n`);
     } else {
         evtlog(`serial port missing: ${line}`, flags);

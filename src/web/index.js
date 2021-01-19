@@ -41,7 +41,7 @@ let istouch = true;//'ontouchstart' in document.documentElement || window.innerW
 let interval = null;
 let timeout = null;
 let queue = [];
-let logs = [];
+let logmsg = [];
 let files = {};
 let file_selected = null;
 let ready = false;
@@ -905,6 +905,15 @@ function bind_arrow_keys() {
     });
 }
 
+function commlog(msg) {
+    logmsg.push(`[${moment().format("HH:mm:ss")}] ${msg.trim()}`);
+    while (logmsg.length > 200) {
+        logmsg.shift();
+    }
+    $('comm-log').innerHTML = logmsg.join('<br>');
+    $('comm-log').scrollTop = $('comm-log').scrollHeight;
+}
+
 function init() {
     // bind left menu items and select default
     menu = {
@@ -987,14 +996,16 @@ function init() {
             try {
                 log({wss_msg: msg});
                 menu_select('comm');
-                $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-                $('comm-log').scrollTop = $('comm-log').scrollHeight;
+                commlog(msg);
+                // $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+                // $('comm-log').scrollTop = $('comm-log').scrollHeight;
             } catch (e) {
                 log({wss_msg: evt, err: e});
             }
         } else {
-            $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-            $('comm-log').scrollTop = $('comm-log').scrollHeight;
+            commlog(msg);
+            // $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
+            // $('comm-log').scrollTop = $('comm-log').scrollHeight;
         }
     };
     let setbed = $('bed_temp').onkeyup = ev => {
@@ -1038,6 +1049,7 @@ function init() {
         }
     };
     $('clear').onclick = () => {
+        logmsg = [];
         $('comm-log').innerHTML = '';
         $('command').focus();
     };
