@@ -1031,7 +1031,7 @@ function init() {
         } else if (msg.indexOf("***") >= 0) {
             try {
                 log({wss_msg: msg});
-                menu_select('comm');
+                // menu_select('comm');
                 commlog(msg);
                 // $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
                 // $('comm-log').scrollTop = $('comm-log').scrollHeight;

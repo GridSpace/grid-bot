@@ -126,6 +126,7 @@ button:active {
     display: none;
     width: 749px;
     xheight: 478px;
+    min-height: 0;
     flex-grow: 1;
     background-color: #f4f4f4;
     border-top: 1px solid black;
