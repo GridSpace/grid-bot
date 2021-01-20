@@ -259,10 +259,14 @@ button:active {
 #page-file > div {
     width: 50%;
 }
+#page-file {
+    min-height: 0;
+}
 #file-list-wrap {
     overflow-y: auto;
     margin: 10px 0 10px 10px;
     background: #fafafa;
+    xmax-height: 400px;
 }
 #file-detail {
     overflow-y: auto;

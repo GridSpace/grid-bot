@@ -1002,8 +1002,25 @@ function init() {
             let time = Date.now();
             files = {};
             JSON.parse(trim).forEach(file => {
+                if (typeof(file) === 'string') {
+                    if (file.charAt(0) === "/") {
+                        return;
+                    }
+                    let [ name, size ] = file.split(' ');
+                    let lsi = file.lastIndexOf('/');
+                    let lpi = file.lastIndexOf('.');
+                    let base = name.substring(lsi + 1, lpi);
+                    let ext = name.substring(lpi + 1);
+                    file = {
+                        name,
+                        ext,
+                        time,
+                        size: parseInt(size),
+                        loc: "SD"
+                    };
+                }
                 let uuid = (time++).toString(36);
-                let ext = file.ext.charAt(0);
+                let ext = file.ext.toLowerCase().charAt(0);
                 let name = cleanName(file.name);
                 let cname = ext === 'g' ? name : [name,file.ext].join('.');
                 files[name] = file;
