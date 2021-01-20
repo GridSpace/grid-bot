@@ -77,6 +77,19 @@ button:active {
     overflow: hidden;
     position: fixed;
 }
+#header {
+    font-family: monospace;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+#hdr_padd {
+    width: 50px;
+}
+.mtop {
+    margin-top: 20px;
+}
 #menu {
     width: 50px;
     font-size: 30px !important;
@@ -112,7 +125,8 @@ button:active {
 #pages > div {
     display: none;
     width: 749px;
-    height: 478px;
+    xheight: 478px;
+    flex-grow: 1;
     background-color: #f4f4f4;
     border-top: 1px solid black;
     border-right: 1px solid black;
@@ -121,9 +135,9 @@ button:active {
 #page-home, #page-ctrl, #page-move {
     padding: 5px;
     width: 739px !important;
-    height: 468px !important;
-    min-height: 468px !important;
-    max-height: 468px !important;
+    xheight: 468px !important;
+    xmin-height: 468px !important;
+    xmax-height: 468px !important;
 }
 #filename {
     text-align: center;
@@ -429,6 +443,12 @@ button:active {
 }
 .content-center {
     align-content: center;
+}
+.a-end {
+    align-items: flex-end;
+}
+.j-end {
+    justify-content: flex-end;
 }
 .text-center {
     text-align: center;

@@ -451,6 +451,16 @@ function extrude(v) {
     }
 }
 
+function topbar(b) {
+    if (b) {
+        $('menu').classList.add('mtop');
+        $('pages').classList.add('mtop');
+    } else {
+        $('menu').classList.remove('mtop');
+        $('pages').classList.remove('mtop');
+    }
+}
+
 function retract(v) {
     if (alert_on_run()) return;
     if (mode === 'fdm') {
@@ -646,7 +656,8 @@ function menu_select(key) {
 }
 
 function set_progress(val) {
-    $('progress').value = val + '%';
+    $('hdr_prog').innerText = `${val}%`;
+    $('progress').value = `${val}%`;
     let rect = $('progress').getBoundingClientRect();
     let pbar = $('progress-bar');
     let pval = val ? rect.width * (val / 100) : 0;
@@ -669,6 +680,7 @@ function status_update(status) {
             state = `${state} (aborted)`;
         }
         $('state').value = state;
+        $('hdr_stat').innerText = state;
     }
     if (status.print) {
         $('filename').value = cleanName(status.print.filename);
@@ -707,6 +719,7 @@ function status_update(status) {
             $('bed_toggle').innerText = 'on';
         }
         $('bed_at').value = Math.round(status.temp.bed);
+        $('hdr_bedd').innerText = Math.round(status.temp.bed);
         if (status.target.ext[0] > 0) {
             if ($('nozzle_temp') !== input) {
                 $('nozzle_temp').value = status.target.ext[0];
@@ -721,6 +734,7 @@ function status_update(status) {
             $('nozzle_toggle').innerText = 'on';
         }
         $('nozzle_at').value = Math.round(status.temp.ext);
+        $('hdr_nozl').innerText = Math.round(status.temp.ext);
     }
     if (status.pos) {
         $('xpos').value = parseFloat(status.pos.X).toFixed(2);
@@ -793,21 +807,23 @@ function status_update(status) {
         last_hash = valuehash;
     }
     if (status.device) {
-        if (status.device.name) {
-            let name = status.device.name.split('.')[0] || 'GridBot';
+        let sd = status.device;
+        if (sd.name) {
+            let name = sd.name.split('.')[0] || 'GridBot';
             document.title = `${name}`;;
         }
-        if (status.device.grbl !== grbl) {
-            grbl = status.device.grbl;
+        if (sd.grbl !== grbl) {
+            grbl = sd.grbl;
         }
-        if (status.device.mode !== mode) {
-            set_mode(mode = status.device.mode);
+        if (sd.mode !== mode) {
+            set_mode(mode = sd.mode);
         }
-        if (status.device.camera === true) {
+        if (sd.camera === true) {
             $('menu-vids').style.display = 'flex';
         } else {
             $('menu-vids').style.display = 'none';
         }
+        $('hdr_devc').innerText = `${sd.version} [${sd.addr[0]}] [${sd.mode}] [${sd.name}]`;
     }
     if (status.feed && input !== $('feedscale')) {
         $('feedscale').value = `${Math.round(status.feed * 100)}%`;

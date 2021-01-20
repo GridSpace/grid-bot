@@ -8,6 +8,19 @@
     </head>
     <body onload="init()">
         <div id="body" class="row items-stretch">
+
+            <div id="header" class="row">
+                <div id="hdr_padd"></div>
+                <div class="row grow j-end">
+                    <div id="hdr_devc"></div>
+                    <div class="grow"></div>
+                    [n:<div id="hdr_nozl"></div>]
+                    [b:<div id="hdr_bedd"></div>]
+                    [<div id="hdr_prog"></div>]
+                    [<div id="hdr_stat"></div>]
+                </div>
+            </div>
+
             <div id="menu" class="col items-center">
                 <div id="menu-home"><i class="fas fa-home"></i></div>
                 <div id="menu-move"><i class="fas fa-expand-arrows-alt"></i></div>
@@ -17,10 +30,11 @@
                 <div id="menu-vids"><i class="fas fa-video"></i></div>
                 <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
             </div>
-            <div id="pages" class="row grow">
+
+            <div id="pages" class="col grow">
+
                 <div id="page-home" class="col">
                     <input id="state" disabled="true"></input>
-
                     <div class="row">
                         <div class="grow"></div>
                         <div id="printing" class="col grow">
@@ -330,6 +344,7 @@
                         <div class="grow"></div>
                     </div>
                 </div>
+
             </div>
         </div>
     </body>
