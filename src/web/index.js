@@ -653,6 +653,9 @@ function menu_select(key) {
     if (key === 'comm') {
         $('command').focus();
     }
+    if (key === 'file') {
+        send('*list');
+    }
 }
 
 function set_progress(val) {

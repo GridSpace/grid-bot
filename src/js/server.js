@@ -1002,6 +1002,18 @@ function process_input_two(line, channel) {
                 channel.request_list = true;
             }
             return evtlog(JSON.stringify(dircache), {list: true, channel});
+        case "*list-sd":
+            if (channel) {
+                channel.request_list = true;
+            }
+            queue('M20', { callback: (list, line) => {
+                console.log({M20: list, line});
+                list.shift();
+                list.pop();
+                list.pop();
+                evtlog(JSON.stringify(list), {list: true, channel});
+            } });
+            return;
         case "*clearkick":
             bed_clear();
         case "*kick":
