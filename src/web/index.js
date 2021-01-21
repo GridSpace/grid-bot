@@ -34,7 +34,7 @@ const MLINE = {
 };
 
 const MKEYS = {
-    M205: [ "X", "Y", "Z", "E", "B", "S", "T" ]
+    M205: [ "X", "Y", "Z", "E", "B", "S", "T", "J" ]
 }
 
 let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
@@ -786,7 +786,8 @@ function status_update(status) {
             let kval = MCODE[key];
             let line = MLINE[key] || 6;
             if (kval === IGNORE) continue;
-            let keys = (MKEYS[key] || Object.keys(map)).slice();
+            let keys = (MKEYS[key] || Object.keys(map))
+                .slice().filter(k => map[k] !== undefined && map[k] !== null);
             let remn = keys.length;
             while (remn > 0) {
                 let count = line;
