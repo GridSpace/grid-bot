@@ -554,15 +554,25 @@ function init_filedrop() {
     var pages = $("pages");
     var list = $("file-list-wrap");
 
+    document.addEventListener("dragover", function(evt) {
+      event.preventDefault();
+    });
+
+    document.addEventListener("dragleave", function(evt) {
+      event.preventDefault();
+    });
+
     pages.addEventListener("dragover", function(evt) {
-        menu_select("file");
         evt.stopPropagation();
         evt.preventDefault();
         evt.dataTransfer.dropEffect = 'copy';
         list.classList.add("bg_red");
+        menu_select("file");
     });
 
     pages.addEventListener("dragleave", function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
         list.classList.remove("bg_red");
     });
 

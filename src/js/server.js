@@ -112,7 +112,8 @@ let onboot_fdm = [
     "M29",              // close out any open SD writes
     "M110 N0",          // reset checksum line number
     "M155 S2",          // report temp every 2 seconds
-    "M115",             // get firmware info
+    "M115",             // get firmware capabilities
+    "M503",             // get eeprom settings
     "M211",             // get endstop boundaries
     "M119",             // get endstop status
     "M114"              // get position
