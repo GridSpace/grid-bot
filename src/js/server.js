@@ -81,6 +81,7 @@ let maxout = 0;                 // high water mark for buffer
 let resend = 0;                 // resend 'ok's waiting for
 let resending = false;          // in resend state machine
 let resend_timer = null;        // timeout catch/restart on resend
+let resend_fn = null;           // on resend timed callback resume
 let on_resend_handler = null;   // on resend complete
 let paused = false;             // queue processing paused
 let pause_timer = null;         // during resends, detect pause timeout
@@ -492,6 +493,13 @@ function on_quiescence() {
     onboot = [];
 }
 
+function update_resend_timeout() {
+    clearTimeout(resend_timer);
+    if (resending && resend_fn) {
+        resend_timer = setTimeout(resend_fn, 50);
+    }
+}
+
 // handle a single line of serial input
 function on_serial_line(line) {
     line = line.toString().trim();
@@ -513,6 +521,8 @@ function on_serial_line(line) {
     if (debug) {
         cmdlog(`<<- ${line}`, match.length ? match[0].flags : {});
     }
+
+    update_resend_timeout();
 
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
@@ -541,10 +551,10 @@ function on_serial_line(line) {
             paused = true;
             // debug = true;
             on_resend_handler = () => {
-                clearTimeout(pause_timer);
                 clearTimeout(resend_timer);
                 // evtlog({restarting: saved.length})
                 resending = false;
+                resend_fn = null;
                 resend = 0;
                 match = saved;
                 waiting = match.length;
@@ -560,22 +570,19 @@ function on_serial_line(line) {
                     // debug = false;
                     kick_queue();
                 };
-                pause_timer = setTimeout(() => {
-                    if (paused) {
-                        console.log('resend pause wait expire', {paused, resend, waiting});
-                    }
-                }, 2000);
             };
-            clearTimeout(pause_timer);
             clearTimeout(resend_timer);
-            resend_timer = setTimeout(() => {
-                if (resend) {
+            resend_fn = () => {
+                if (resending) {
                     // console.log('resend expire', {resend, paused, debug, waiting});
                     on_resend_handler();
                 } else {
                     // console.log({resend_ok: saved});
+                    resend_fn = null;
                 }
-            }, 1000);
+            };
+            update_resend_timeout();
+            // resend_timer = setTimeout(resend_fn, 1000);
         }
         return;
     }
@@ -634,7 +641,7 @@ function on_serial_line(line) {
     if (line.indexOf("ok") === 0) {
         if (resending) {
             if (--resend === 0) {
-                setTimeout(on_resend_handler, 500);
+                setImmediate(on_resend_handler);
             }
             return;
         }
