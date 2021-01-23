@@ -78,15 +78,12 @@ let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
 let waiting = 0;                // unack'd output lines
 let maxout = 0;                 // high water mark for buffer
-let resend = 0;                 // resend 'ok's waiting for
 let resending = false;          // in resend state machine
 let resend_timer = null;        // timeout catch/restart on resend
-let resend_fn = null;           // on resend timed callback resume
 let on_resend_handler = null;   // on resend complete
 let paused = false;             // queue processing paused
-let pause_timer = null;         // during resends, detect pause timeout
-let processing = false;         // queue being drained
 let on_pause_handler = null;    // on pause complete
+let processing = false;         // queue being drained
 let sdsend = false;             // true if saving to SD
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
@@ -493,13 +490,6 @@ function on_quiescence() {
     onboot = [];
 }
 
-function update_resend_timeout() {
-    clearTimeout(resend_timer);
-    if (resending && resend_fn) {
-        resend_timer = setTimeout(resend_fn, 50);
-    }
-}
-
 // handle a single line of serial input
 function on_serial_line(line) {
     line = line.toString().trim();
@@ -522,68 +512,51 @@ function on_serial_line(line) {
         cmdlog(`<<- ${line}`, match.length ? match[0].flags : {});
     }
 
-    update_resend_timeout();
+    // drain until timeout on resend
+    if (resending) {
+        // evtlog(`resend drop: ${line}`);
+        clearTimeout(resend_timer);
+        resend_timer = setTimeout(on_resend_handler, 50);
+        return;
+    }
 
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
-        if (!resending) {
-            let from = parseInt(line.split(' ')[1]);
-            if (!debug) {
-                evtlog(`resend from ${from}`);
-            }
-            if (match.length === 0 || from < match[0].flags.lineno) {
-                let rerun = histo.filter(h => h.flags.lineno >= from);
-                console.log('resend from history', rerun);
-                match = rerun;
-            } else
-            while (match.length && match[0].flags.lineno < from) {
-                console.log('resend discard', match[0]);
-                match.shift();
-            }
-            // it's possible to discard the entire match stack
-            if (match.length === 0) {
-                return;
-            }
-            // because first ok skipped / errored
-            resend = match.length - 1;
-            let saved = match.slice();
-            resending = true;
-            paused = true;
-            // debug = true;
-            on_resend_handler = () => {
-                clearTimeout(resend_timer);
-                // evtlog({restarting: saved.length})
-                resending = false;
-                resend_fn = null;
-                resend = 0;
-                match = saved;
-                waiting = match.length;
-                for (let rec of match) {
-                    let rout = cksum(rec.line, rec.flags.lineno);
-                    sport.write(`${rout}\n`);
-                    if (debug) {
-                        cmdlog(`=>> ${rout}`, match.length ? match[0].flags : {});
-                    }
-                }
-                on_pause_handler = () => {
-                    paused = false;
-                    // debug = false;
-                    kick_queue();
-                };
-            };
-            clearTimeout(resend_timer);
-            resend_fn = () => {
-                if (resending) {
-                    // console.log('resend expire', {resend, paused, debug, waiting});
-                    on_resend_handler();
-                } else {
-                    // console.log({resend_ok: saved});
-                    resend_fn = null;
-                }
-            };
-            update_resend_timeout();
-            // resend_timer = setTimeout(resend_fn, 1000);
+        let from = parseInt(line.split(' ')[1]);
+        if (!debug) {
+            evtlog(`resend from ${from}`);
         }
+        let rerun = histo.filter(h => h.flags.lineno >= from);
+        match = rerun;
+        if (match.length === 0) {
+            evtlog(`nothing to resend`);
+            resending = false;
+            waiting = 0;
+            kick_queue();
+            return;
+        }
+        evtlog(`resend match: ${rerun[0].line} -- ${JSON.stringify(rerun[0].flags)}`);
+        let saved = match.slice();
+        resending = true;
+        paused = true;
+        on_resend_handler = () => {
+            clearTimeout(resend_timer);
+            resending = false;
+            match = saved;
+            waiting = match.length;
+            for (let rec of match) {
+                let rout = cksum(rec.line, rec.flags.lineno);
+                sport.write(`${rout}\n`);
+                if (debug) {
+                    cmdlog(`=>> ${rout}`, match.length ? match[0].flags : {});
+                }
+            }
+            on_pause_handler = () => {
+                paused = false;
+                kick_queue();
+            };
+        };
+        resend_timer = setTimeout(on_resend_handler, 50);
         return;
     }
 
@@ -639,12 +612,6 @@ function on_serial_line(line) {
 
     let matched = false;
     if (line.indexOf("ok") === 0) {
-        if (resending) {
-            if (--resend === 0) {
-                setImmediate(on_resend_handler);
-            }
-            return;
-        }
         // match output to an initiating command (from a queue)
         // after "start" there is no collecting until first "ok"
         if (collect) {
