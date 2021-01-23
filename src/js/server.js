@@ -78,6 +78,8 @@ let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
 let waiting = 0;                // unack'd output lines
 let maxout = 0;                 // high water mark for buffer
+let errors = 0;                 // total error count
+let acks = 0;                   // total ok count
 let resending = false;          // in resend state machine
 let resend_timer = null;        // timeout catch/restart on resend
 let on_resend_handler = null;   // on resend complete
@@ -103,6 +105,10 @@ let wait_counter = 0;
 let wait_time = 10000;
 let printCache = {};            // cache of print
 let known = {};                 // known files
+let buf_free = Infinity;        // remaing buffer slots
+let buf_maxx = -Infinity;       // max buf_free observed
+let pln_free = Infinity;        // remaining planner slots
+let pln_maxx = -Infinity;       // max pln_free observed
 
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
@@ -492,6 +498,9 @@ function on_quiescence() {
 
 // handle a single line of serial input
 function on_serial_line(line) {
+    clearTimeout(pln_timer);
+    clearTimeout(buf_timer);
+
     line = line.toString().trim();
 
     // on first line, setup a quiescence timer
@@ -523,9 +532,6 @@ function on_serial_line(line) {
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
         let from = parseInt(line.split(' ')[1]);
-        if (!debug) {
-            evtlog(`resend from ${from}`);
-        }
         let rerun = histo.filter(h => h.flags.lineno >= from);
         match = rerun;
         if (match.length === 0) {
@@ -535,7 +541,10 @@ function on_serial_line(line) {
             kick_queue();
             return;
         }
-        evtlog(`resend match: ${rerun[0].line} -- ${JSON.stringify(rerun[0].flags)}`);
+        if (!debug) {
+            evtlog(`resending from ${from}`);
+        }
+        // evtlog(`resend match: ${rerun[0].line} -- ${JSON.stringify(rerun[0].flags)}`);
         let saved = match.slice();
         resending = true;
         paused = true;
@@ -564,7 +573,8 @@ function on_serial_line(line) {
     if (line.indexOf("Error:") === 0) {
         status.error = {
             time: Date.now(),
-            cause: line.substring(6)
+            cause: line.substring(6),
+            count: errors++
         };
         if (!debug && !resending) {
             evtlog(line, {error: true});
@@ -606,29 +616,65 @@ function on_serial_line(line) {
                     break;
             }
         });
-        kick_queue();
+        // kick_queue();
         return;
     }
 
     let matched = false;
     if (line.indexOf("ok") === 0) {
+        acks++;
+
         // match output to an initiating command (from a queue)
         // after "start" there is no collecting until first "ok"
         if (collect) {
             line = line.substring(3);
             collect.push(line);
         }
-        matched = match.shift();
+
+        matched = match.shift() || {};
         let from = matched ? matched.line : "???";
-        let flags = matched ? matched.flags : {};
+        let flags = matched ? matched.flags || {} : {};
+
+        // look for 'N' and ADVANCED_OK responses
+        line.split(' ').map(v => v.trim()).forEach(tok => {
+            switch (tok.charAt(0)) {
+                case 'N':
+                    // if checksumming is enabled, lines start with Nxxxx
+                    // and must match the stored output record
+                    let lno = parseInt(tok.substring(1));
+                    if (lno !== flags.lineno) {
+                        if (flags.lineno) {
+                            let delta = parseInt(flags.lineno) - parseInt(lno);
+                            console.log(`expected: [${flags.lineno}] got: [${lno}] '${line}' delta: ${delta}`);
+                        } else {
+                            console.log(`unexpected: [${lno}] '${line}'`);
+                        }
+                    }
+                    break;
+                case 'B':
+                    buf_free = parseInt(tok.substring(1));
+                    buf_maxx = Math.max(buf_maxx, buf_free);
+                    break;
+                case 'P':
+                    pln_free = parseInt(tok.substring(1));
+                    pln_maxx = Math.max(pln_maxx, pln_free);
+                    break;
+            }
+        });
+
         // if checksumming is enabled, lines start with Nxxxx
         // and must match the stored output record
-        if (line.charAt(0) === 'N') {
-            let lno = parseInt(line.split(' ')[0].substring(1));
-            if (lno !== flags.lineno) {
-                console.log({mismatch: line, lno, matched, collect});
-            }
-        }
+        // if (line.charAt(0) === 'N') {
+        //     let lno = parseInt(line.split(' ')[0].substring(1));
+        //     if (lno !== flags.lineno) {
+        //         if (flags.lineno) {
+        //             let delta = parseInt(flags.lineno) - parseInt(lno);
+        //             console.log(`expected: [${flags.lineno}] got: [${lno}] '${line}' delta: ${delta}`);
+        //         } else {
+        //             console.log(`unexpected: [${lno}] '${line}'`);
+        //         }
+        //     }
+        // }
         // callbacks used by M117 to track start of print
         if (matched && flags.callback) {
             flags.callback(collect, matched.line);
@@ -1263,8 +1309,40 @@ function kick_queue() {
     setImmediate(process_queue);
 }
 
+let buf_timer;
+let pln_timer;
+
 function process_queue() {
     if (processing) {
+        return;
+    }
+    clearTimeout(pln_timer);
+    clearTimeout(buf_timer);
+    // wait for buffer and planner to catch up before sending more
+    if (pln_free <= bufmax) {
+        let pln_last = acks;
+        pln_timer = setTimeout(() => {
+            if (pln_last === acks) {
+                if (debug) {
+                    console.log('planner timeout', pln_free, buf_free);
+                }
+                pln_free = Infinity;
+                kick_queue();
+            }
+        }, 100);
+        return;
+    }
+    if (buf_free <= bufmax) {
+        let buf_last = acks;
+        buf_timer = setTimeout(() => {
+            if (buf_last === acks) {
+                if (debug) {
+                    console.log('buffer timeout', buf_free, pln_free);
+                }
+                buf_free = Infinity;
+                kick_queue();
+            }
+        }, 500);
         return;
     }
     processing = true;
