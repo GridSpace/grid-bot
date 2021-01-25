@@ -532,6 +532,15 @@ function on_serial_line(line) {
     // resend on checksum errors
     if (line.indexOf("Resend:") === 0) {
         let from = parseInt(line.split(' ')[1]);
+
+        console.log('resend', {from, match_at: match[0], buf_at:buf[0], waiting, match_len: match.length});
+
+        // let resend = histo.filter(h => h.flags.lineno >= from);
+        // re-inject historical items >= from
+        // buf.splice(0, 0, ...resend);
+        // filter out expected matches >= from
+        // match = match.filter(rec => rec.flags.lineno >= from);
+
         let rerun = histo.filter(h => h.flags.lineno >= from);
         match = rerun;
         if (match.length === 0) {

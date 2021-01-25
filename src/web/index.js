@@ -824,7 +824,7 @@ function status_update(status) {
         let sd = status.device;
         if (sd.name) {
             let name = sd.name.split('.')[0] || 'GridBot';
-            document.title = `${name}`;;
+            document.title = `${name} | ${status.state}`;;
         }
         if (sd.grbl !== grbl) {
             grbl = sd.grbl;
