@@ -125,7 +125,6 @@ button:active {
 #pages > div {
     display: none;
     width: 749px;
-    xheight: 478px;
     min-height: 0;
     flex-grow: 1;
     background-color: #f4f4f4;
@@ -136,9 +135,6 @@ button:active {
 #page-home, #page-ctrl, #page-move {
     padding: 5px;
     width: 739px !important;
-    xheight: 468px !important;
-    xmin-height: 468px !important;
-    xmax-height: 468px !important;
 }
 #filename {
     text-align: center;

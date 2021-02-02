@@ -69,10 +69,10 @@ let gridlast = '*';
 let extra = opt.extra;
 let errend = opt.errend || false;
 
+let checksum = opt.checksum;    // use line numbers and checksums
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
 let port = oport;               // default port (possible to probe)
-let checksum = opt.checksum;    // use line numbers and checksums
 let lineno = 1;                 // next output line number
 let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
@@ -110,6 +110,7 @@ let buf_maxx = -Infinity;       // max buf_free observed
 let pln_free = Infinity;        // remaining planner slots
 let pln_maxx = -Infinity;       // max pln_free observed
 
+let config = {};                // loaded config files
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
 let onboot_fdm = [
@@ -258,36 +259,55 @@ const status = {
     settings: {}                // map of active settings
 };
 
+function set_config(obj) {
+    try {
+        Object.assign(config, obj);
+        fs.writeFileSync('etc/serv3r.json', JSON.stringify(config,undefined,2));
+        load_config();
+    } catch (e) {
+        console.log({error_writing_config: e});
+    }
+}
+
 function load_config() {
     try {
+        config = { on: {} };
+
+        // hand-edited
         if (lastmod('etc/server.json')) {
-            let json = eval('('+fs.readFileSync('etc/server.json').toString()+')');
-            let opt = json.opt || json;
-            status.device.mode = mode = opt.mode || mode;
-            status.device.grbl = grbl = opt.grbl || grbl;
-            onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
-            onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
-            let on = json.on || {};
-            if (Array.isArray(on.boot)) onboot = on.boot;
-            if (Array.isArray(on.abort)) onabort = on.abort;
-            if (Array.isArray(on.error)) onerror = on.error;
-            if (Array.isArray(on.pause)) onpause = on.pause;
-            if (Array.isArray(on.resume)) onresume = on.resume;
-            filedir = opt.filedir || filedir;
-            grid = opt.grid || grid;
-            port = opt.port || port;
-            baud = opt.baud || baud;
-            bufmax = opt.maxbuf || opt.bufmax || bufmax;
-            webport = opt.webport || webport;
-            ctrlport = opt.listen || opt.ctrlport || ctrlport;
-            webdir = opt.webdir || webdir;
-            debug = opt.debug || debug || false;
-            checksum = opt.checksum || checksum || false;
-            errend = opt.errend || errend || false;
-        } else {
-            onboot = mode === 'fdm' ? onboot_fdm : onboot_cnc;
-            onabort = mode === 'fdm' ? onabort_fdm : onabort_cnc;
+            Object.assign(config, eval('('+fs.readFileSync('etc/server.json').toString()+')'))
         }
+        // server and ui overrides
+        if (lastmod('etc/serv3r.json')) {
+            Object.assign(config, eval('('+fs.readFileSync('etc/serv3r.json').toString()+')'))
+        }
+
+        let opt = config;
+        let on = config.on;
+
+        mode = status.device.mode = opt.mode = (opt.mode || mode);
+        grbl = status.device.grbl = opt.grbl = (opt.grbl || grbl);
+
+        if (Array.isArray(on.boot)) onboot = on.boot;
+        if (Array.isArray(on.abort)) onabort = on.abort;
+        if (Array.isArray(on.error)) onerror = on.error;
+        if (Array.isArray(on.pause)) onpause = on.pause;
+        if (Array.isArray(on.resume)) onresume = on.resume;
+
+        onboot = on.boot = (onboot || mode === 'fdm' ? onboot_fdm : onboot_cnc);
+        onabort = on.abort = (onabort || mode === 'fdm' ? onabort_fdm : onabort_cnc);
+
+        filedir = opt.filedir = (opt.filedir || filedir);
+        grid = opt.grid = (opt.grid || grid);
+        port = opt.port = (opt.port || port);
+        baud = opt.baud = (opt.baud || baud);
+        bufmax = opt.bufmax = (opt.maxbuf || opt.bufmax || bufmax);
+        webport = opt.webport = (opt.webport || webport);
+        ctrlport = opt.listen = (opt.listen || opt.ctrlport || ctrlport);
+        webdir = opt.webdir = (opt.webdir || webdir);
+        debug = opt.debug = (opt.debug || debug || false);
+        checksum = opt.checksum = (opt.checksum || checksum || false);
+        errend = opt.errend = (opt.errend || errend || false);
     } catch (e) {
         console.log({error_reading_config: e});
     }
@@ -976,85 +996,109 @@ function process_input(line, channel) {
 
 function process_input_two(line, channel) {
     line = line.toString().trim();
-    // remap *name to an *exec call
+    // rewrite *name to an *exec call
     if (line.indexOf("*name ") === 0) {
-        status.device.name = line.substring(6);
         line = `*exec sudo bin/update-name.sh ${status.device.name}`;
+        status.device.name = line.split(' ').slice(3).join(' ');
     }
-    // remap *wifi to an *exec call
+    // rewrite *wifi to an *exec call
     if (line.indexOf("*wifi ") === 0) {
-        line = `*exec sudo bin/update-wifi.sh ${line.substring(6)}`;
+        line = `*exec sudo bin/update-wifi.sh ${arg}`;
     }
-    // handle *exec calls
-    if (line.indexOf("*exec ") === 0) {
-        let cmd = line.substring(6);
-        evtlog(`exec: ${cmd}`, {channel});
-        exec(cmd, (err, stdout, stderr) => {
-            (stdout || stderr).split('\n').forEach(line => {
-                if (line) {
-                    evtlog("--> " + line, {channel});
+    let toks = line.split(' ').map(v => v.trim()).filter(v => v);
+    let cmd = toks[0];
+    let arg = toks.slice(1).join(' ');
+    let file;
+    let pretty = undefined;
+    switch (cmd) {
+        case "*exit":
+            return process.exit(0);
+        case "*exec":
+            evtlog(`exec: ${arg}`, {channel});
+            return exec(arg, (err, stdout, stderr) => {
+                (stdout || stderr).split('\n').forEach(line => {
+                    if (line) {
+                        evtlog("--> " + line, {channel});
+                    }
+                });
+                if (stderr) {
+                    evtlog({exec:arg, err, stdout, stderr});
                 }
             });
-            if (stderr) {
-                evtlog(JSON.stringify({cmd, err, stdout, stderr}));
-            }
-        });
-        return;
-    }
-    // handle *buf reset
-    if (line.indexOf('*buf ') === 0) {
-        bufmax = parseInt(line.substring(5));
-        return;
-    }
-    // handle feed scaling
-    if (line.indexOf('*feed ') === 0) {
-        return status.feed = parseFloat(line.substring(6));
-    }
-    // debug tokenization
-    if (line.indexOf("*tok ") === 0) {
-        return evtlog(tokenize_line(line.substring(5)).join(','));
-    }
-    let pretty = undefined;
-    switch (line) {
-        case "*exit": return process.exit(0);
-        case "*bounce": return sport ? sport.close() : null;
-        case "*debug on": return debug = true;
-        case "*debug off": return debug = false;
-        case "*extrude on": return extrude = true;
-        case "*extrude off": return extrude = false;
-        case "*setmode fdm": return status.device.mode = 'fdm';
-        case "*setmode cnc": return status.device.mode = 'cnc';
-        case "*match":
-            console.log({match});
+        case "*tok":
+            // debug tokenization
+            return evtlog(tokenize_line(line.substring(5)).join(','));
+        case "*buf":
+            return bufmax = parseInt(arg);
+        case "*feed":
+            return status.feed = parseFloat(arg);
+        case "*bounce":
+            return sport ? sport.close() : null;
+        case "debug":
+            if (toks[1] === "on") debug = true;
+            if (toks[1] === "off") debug = false;
             return;
+        case "*extrude":
+            if (toks[1] === "on") extrude = true;
+            if (toks[1] === "off") extrude = false;
+            return;
+        case "*setmode":
+            if (toks[1] === "fdm") status.device.mode = 'fdm';
+            if (toks[1] === "cnc") status.device.mode = 'cnc';
+            return;
+        case "*match":
+            return console.log({match});
+        case "*pause":
+            return job_pause(toks[1]);
         case "*list":
             if (channel) {
                 channel.request_list = true;
             }
-            return evtlog(JSON.stringify(dircache), {list: true, channel});
+            return evtlog(dircache, {list: true, channel});
         case "*list-sd":
             if (channel) {
                 channel.request_list = true;
             }
-            queue('M20', { callback: (list, line) => {
+            return queue('M20', { callback: (list, line) => {
                 console.log({M20: list, line});
                 list.shift();
                 list.pop();
                 list.pop();
-                evtlog(JSON.stringify(list), {list: true, channel});
+                evtlog(list, {list: true, channel});
             } });
-            return;
         case "*clearkick":
             bed_clear();
         case "*kick":
             if (status.print.run) {
-                return evtlog("job in progress");
+                return evtlog("job in progress", {channel});
             }
-            return kick_next();
-        case "*update": return update_firmware();
-        case "*cancel": return job_cancel();
-        case "*abort": return job_abort();
-        case "*resume": return job_resume();
+            if (toks.length > 1) {
+                file = args;
+                if (file.indexOf(".gcode") < 0) {
+                    file += ".gcode";
+                }
+                return kick_named(path.join(filedir, file));
+            } else {
+                return kick_next();
+            }
+        case "*runbox":
+            if (status.print.run) {
+                return evtlog("job in progress", {channel});
+            }
+            let opt = line.substring(8).split('@').map(v => v.trim());
+            file = opt[0];
+            if (file.indexOf(".gcode") < 0) {
+                file += ".gcode";
+            }
+            return runbox(path.join(filedir, file), parseInt(opt[1] || 3000));
+        case "*update":
+            return update_firmware();
+        case "*cancel":
+            return job_cancel();
+        case "*abort":
+            return job_abort();
+        case "*resume":
+            return job_resume();
         case "*clear":
             bed_clear();
             return evtlog("bed marked clear");
@@ -1080,76 +1124,56 @@ function process_input_two(line, channel) {
                 channel.request_status = true;
             }
             return send_status(pretty);
-            // return evtlog(JSON.stringify(status,undefined,pretty), {status: true});
+        case "*set-config":
+            set_config(JSON.parse(arg));
+        case "*get-config":
+        case "*config":
+            return evtlog({config}, {channel, status:true});
         case "*center":
-            queue_priority(`G0 X${status.device.max.X/2} Y${status.device.max.Y/2} F6000`, channel);
-            return;
-    }
-    if (line === '*pause' || line.indexOf('*pause ') === 0) {
-        line = line.split(' ');
-        return job_pause(line[1]);
-    }
-    if (line.indexOf("*update ") === 0) {
-        let file = line.substring(8);
-        if (file.indexOf(".hex") < 0) {
-            file += ".hex";
-        }
-        return update_firmware(file);
-    }
-    if (line.indexOf("*upload ") === 0) {
-        if (channel.linebuf) {
-            // accumulate all input data to linebuffer w/ no line breaks
-            channel.linebuf.enabled = false;
-            upload = line.substring(8);
-            // evtlog({upload});
-        } else {
-            evtlog({no_upload_possible: channel});
-        }
-    } else if (line.indexOf("*delete ") === 0) {
-        let base = line.substring(8);
-        let eio = base.lastIndexOf(".");
-        if (eio > 0) {
-            base = base.substring(0, eio);
-        }
-        let files = [
-            path.join(filedir, base + ".nc"),
-            path.join(filedir, base + ".hex"),
-            path.join(filedir, base + ".gcode"),
-            path.join(filedir, base + ".print"),
-            path.join(filedir, encodeURIComponent(base + ".gcode"))
-        ];
-        remove_files(files, (res) => {
-            try {
-                clear_dir(path.join(filedir, base + ".output"), true);
-            } catch (e) {
-                evtlog(`no output dir for ${base}`);
+            return queue_priority(`G0 X${status.device.max.X/2} Y${status.device.max.Y/2} F6000`, channel);
+        case "*update":
+            file = line.substring(8);
+            if (file.indexOf(".hex") < 0) {
+                file += ".hex";
             }
-            check_file_dir(true);
-        });
-    } else if (line.indexOf("*kick ") === 0) {
-        if (status.print.run) {
-            return evtlog("job in progress", {channel});
-        }
-        let file = line.substring(6);
-        if (file.indexOf(".gcode") < 0) {
-            file += ".gcode";
-        }
-        kick_named(path.join(filedir, file));
-    } else if (line.indexOf("*runbox ") === 0) {
-        if (status.print.run) {
-            return evtlog("job in progress", {channel});
-        }
-        let opt = line.substring(8).split('@').map(v => v.trim());
-        let file = opt[0];
-        if (file.indexOf(".gcode") < 0) {
-            file += ".gcode";
-        }
-        runbox(path.join(filedir, file), parseInt(opt[1] || 3000));
-    } else if (line.indexOf("*send ") === 0) {
-        send_file(line.substring(6), false);
-    } else if (line.indexOf("*sendsd ") === 0) {
-        send_file(line.substring(8), true);
-    } else if (line.charAt(0) === '!') {
+            return update_firmware(file);
+        case "*upload":
+            if (channel.linebuf) {
+                // accumulate all input data to linebuffer w/ no line breaks
+                channel.linebuf.enabled = false;
+                upload = line.substring(8);
+            } else {
+                evtlog({no_upload_possible: channel});
+            }
+            return;
+        case "*delete":
+            let base = line.substring(8);
+            let eio = base.lastIndexOf(".");
+            if (eio > 0) {
+                base = base.substring(0, eio);
+            }
+            let files = [
+                path.join(filedir, base + ".nc"),
+                path.join(filedir, base + ".hex"),
+                path.join(filedir, base + ".gcode"),
+                path.join(filedir, base + ".print"),
+                path.join(filedir, encodeURIComponent(base + ".gcode"))
+            ];
+            remove_files(files, (res) => {
+                try {
+                    clear_dir(path.join(filedir, base + ".output"), true);
+                } catch (e) {
+                    evtlog(`no output dir for ${base}`);
+                }
+                check_file_dir(true);
+            });
+            return;
+        case "*send":
+            return send_file(arg, false);
+        case "*sendsd":
+            return send_file(arg, true);
+    }
+    if (line.charAt(0) === '!') {
         let ecmd = line.substring(1);
         if (sport) {
             sport.write(`${ecmd}\n`);
@@ -1182,6 +1206,7 @@ function remove_files(files, ondone, res) {
     }
 }
 
+// only for old 8-bit AVR-based boards
 function update_firmware(hexfile, retry) {
     if (updating) {
         return;
@@ -2007,6 +2032,7 @@ function startup() {
         files: filedir,
         grid,
         device: port || 'missing',
+        debug,
         baud,
         maxbuf: bufmax,
         webport: webport || 'off',

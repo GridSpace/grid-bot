@@ -37,7 +37,7 @@ const MKEYS = {
     M205: [ "X", "Y", "Z", "E", "B", "S", "T", "J" ]
 }
 
-let istouch = true;//'ontouchstart' in document.documentElement || window.innerWidth === 800;
+let istouch = true || 'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
 let timeout = null;
 let queue = [];
@@ -48,6 +48,7 @@ let ready = false;
 let sock = null;
 let last_jog = null;
 let last_jog_speed = null;
+let last_cfg = {};      // last config object
 let last_set = {};      // last settings object
 let last_hash = '';     // last settings hash
 let jog_val = 0.0;
@@ -270,7 +271,6 @@ function origin_set_axis(axis) {
         send('*status');
     }
 }
-
 
 function origin_clear() {
     if (alert_on_run()) return;
@@ -679,6 +679,10 @@ function set_progress(val) {
     pbar.style.width = `${pval}px`;
 }
 
+function config_update(config) {
+    console.log({config});
+}
+
 function status_update(status) {
     if (status.state) {
         let state = status.state;
@@ -979,7 +983,7 @@ function init() {
         interval = setInterval(() => {
             send('*status');
         }, 1000);
-        send('*status;*list');
+        send('*status;*list;*config');
     };
     sock.onclose = (evt) => {
         log({wss_close: true});
@@ -1007,7 +1011,14 @@ function init() {
         let spos = msg.indexOf("*** ");
         let epos = msg.lastIndexOf(" ***");
         if (msg.indexOf("*** {") >= 0) {
-            status_update(last_set = JSON.parse(msg.substring(spos+4, epos)));
+            let obj = JSON.parse(msg.substring(spos+4, epos));
+            if (obj.state || obj.update) {
+                status_update(last_set = obj);
+            } else if (obj.config) {
+                config_update(last_cfg = obj.config);
+            } else {
+                commlog(JSON.stringify(obj));
+            }
         } else if (msg.indexOf("*** [") >= 0) {
             let list = $('file-list');
             let html = [];
@@ -1044,17 +1055,12 @@ function init() {
         } else if (msg.indexOf("***") >= 0) {
             try {
                 log({wss_msg: msg});
-                // menu_select('comm');
                 commlog(msg);
-                // $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-                // $('comm-log').scrollTop = $('comm-log').scrollHeight;
             } catch (e) {
                 log({wss_msg: evt, err: e});
             }
         } else {
             commlog(msg);
-            // $('comm-log').innerHTML += `[${moment().format("HH:mm:ss")}] ${msg.trim()}<br>`;
-            // $('comm-log').scrollTop = $('comm-log').scrollHeight;
         }
     };
     let setbed = $('bed_temp').onkeyup = ev => {
