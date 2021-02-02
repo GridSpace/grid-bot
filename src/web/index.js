@@ -53,7 +53,7 @@ let last_hash = '';     // last settings hash
 let jog_val = 0.0;
 let jog_speed = 1000;
 let input = null;       // active input for keypad
-let settings = localStorage;
+let persist = localStorage;
 let selected = null;
 let mode = null;        // for checking against current status
 let grbl = false;
@@ -285,7 +285,7 @@ function update_probe_z() {
     let status = last_set;
     let settings = status.settings;
     let pos = status.pos;
-    if (!settings.M851) return alert('missing M851');
+    if (!persist.M851) return alert('missing M851');
     if (!pos) return alertn('missing position');
     let newz = settings.M851.Z + pos.Z;
     if (isNaN(newz)) return alert(`invalid new z ${newz}`);
@@ -364,8 +364,8 @@ function nozzle_toggle() {
 
 function preheat() {
     if (alert_on_run()) return;
-    send(`M104 S${settings.default_nozzle || 220}`);
-    send(`M140 S${settings.default_bed || 65}`);
+    send(`M104 S${persist.default_nozzle || 220}`);
+    send(`M140 S${persist.default_bed || 65}`);
     send('M105');
 }
 
@@ -453,9 +453,11 @@ function extrude(v) {
 
 function topbar(b) {
     if (b) {
+        persist.topbar = true;
         $('menu').classList.add('mtop');
         $('pages').classList.add('mtop');
     } else {
+        persist.topbar = false;
         $('menu').classList.remove('mtop');
         $('pages').classList.remove('mtop');
     }
@@ -479,9 +481,9 @@ function set_jog(val, el) {
     if (el) {
         el.classList.add('bg_yellow');
         last_jog = el;
-        settings.jog_sel = el.id;
+        persist.jog_sel = el.id;
     }
-    settings.jog_val = val;
+    persist.jog_val = val;
 }
 
 function set_jog_speed(val, el) {
@@ -491,8 +493,8 @@ function set_jog_speed(val, el) {
     }
     el.classList.add('bg_yellow');
     last_jog_speed = el;
-    settings.jog_speed_sel = el.id;
-    settings.jog_speed = val;
+    persist.jog_speed_sel = el.id;
+    persist.jog_speed = val;
 }
 
 function jog(axis, dir) {
@@ -653,7 +655,7 @@ function menu_select(key) {
     }
     page.style.display = 'flex';
     page_selected = page;
-    settings.page = key;
+    persist.page = key;
 
     clearTimeout(vids_timer)
 
@@ -961,7 +963,7 @@ function init() {
             menu_select(key);
         };
     }
-    menu_select(settings.page || 'home');
+    menu_select(persist.page || 'home');
 
     timeout = null;
     sock = new WebSocket(`ws://${document.location.hostname}:4080`);
@@ -1116,14 +1118,14 @@ function init() {
         input = $('nozzle_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
-            input.value = settings.default_nozzle || '220';
+            input.value = persist.default_nozzle || '220';
         }
         ev.stopPropagation();
     };
     $('nozzle_temp').ondblclick = (ev) => {
         let sel = $('nozzle_temp');
         if (sel.value !== '0' && confirm('set default nozzle temp')) {
-            settings.default_nozzle = sel.value;
+            persist.default_nozzle = sel.value;
         }
     }
     $('bed_temp').onclick = (ev) => {
@@ -1135,14 +1137,14 @@ function init() {
         input = $('bed_temp');
         input.classList.add('bg_green');
         if (input.value === '0') {
-            input.value = settings.default_bed || '55';
+            input.value = persist.default_bed || '55';
         }
         ev.stopPropagation();
     };
     $('bed_temp').ondblclick = (ev) => {
         let sel = $('bed_temp');
         if (sel.value !== '0' && confirm('set default bed temp')) {
-            settings.default_bed = sel.value;
+            persist.default_bed = sel.value;
         }
     }
     for (let i=0; i<10; i++) {
@@ -1193,14 +1195,14 @@ function init() {
     let tool_diam = $('tool-diam');
     let tool_metric = $('tool-metric');
     let tool_imperial = $('tool-imperial');
-    tool_diam.value = settings.tool_diam || 0.25;
-    tool_metric.checked = settings.tool_metric === 'true';
+    tool_diam.value = persist.tool_diam || 0.25;
+    tool_metric.checked = persist.tool_metric === 'true';
     tool_imperial.checked = !tool_metric.checked;
     tool_metric.onclick = tool_imperial.onclick = () => {
-        settings.tool_metric = tool_metric.checked
+        persist.tool_metric = tool_metric.checked
     };
     tool_diam.onkeyup = (ev) => {
-        settings.tool_diam = tool_diam.value;
+        persist.tool_diam = tool_diam.value;
     };
     // reload page on status click
     $('page-home').onclick = ev => {
@@ -1217,6 +1219,7 @@ function init() {
     input_deselect();
     bind_arrow_keys();
     // restore settings
-    set_jog(parseFloat(settings.jog_val) || 1, $(settings.jog_sel || "j100"));
-    set_jog_speed(parseFloat(settings.jog_speed) || 100, $(settings.jog_speed_sel || "js0100"));
+    set_jog(parseFloat(persist.jog_val) || 1, $(persist.jog_sel || "j100"));
+    set_jog_speed(parseFloat(persist.jog_speed) || 100, $(persist.jog_speed_sel || "js0100"));
+    topbar(persist.topbar === 'true' || false);
 }
