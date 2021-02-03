@@ -90,6 +90,7 @@ let sdsend = false;             // true if saving to SD
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
+let filament = true;            // filament present status
 let dircache = [];              // cache of files in watched directory
 let clients = [];               // connected clients
 let buf = [];                   // output line buffer
@@ -523,6 +524,10 @@ function on_serial_line(line) {
 
     line = line.toString().trim();
 
+    if (debug) {
+        cmdlog(`<<- ${line}`, match.length ? match[0].flags : {});
+    }
+
     // on first line, setup a quiescence timer
     if (status.device.lines++ === 0) {
         wait_counter = status.device.lines;
@@ -535,10 +540,6 @@ function on_serial_line(line) {
 
     if (line.length === 0) {
         return;
-    }
-
-    if (debug) {
-        cmdlog(`<<- ${line}`, match.length ? match[0].flags : {});
     }
 
     // drain until timeout on resend
@@ -623,10 +624,13 @@ function on_serial_line(line) {
         return;
     }
 
+    let isOK = line.indexOf("ok") === 0;
+
     // parse M105/M155 temperature updates
-    if (line.indexOf("T:") === 0) {
+    if (line.indexOf("T:") === 0 || line.indexOf("ok T:") === 0) {
+        let check = isOK ? line.substring(3) : line;
         // eliminate spaces before slashes " /"
-        let toks = line.replace(/ \//g,'/').split(' ');
+        let toks = check.replace(/ \//g,'/').split(' ');
         // parse extruder/bed temps
         toks.forEach(tok => {
             tok = tok.split(":");
@@ -645,12 +649,14 @@ function on_serial_line(line) {
                     break;
             }
         });
-        // kick_queue();
-        return;
+        if (!isOK) {
+            // kick_queue();
+            return;
+        }
     }
 
     let matched = false;
-    if (line.indexOf("ok") === 0) {
+    if (isOK) {
         acks++;
 
         // match output to an initiating command (from a queue)
@@ -778,7 +784,7 @@ function on_serial_line(line) {
         });
     }
 
-    // parse M119 endstop status
+    // parse M119 endstop status messages
     if (line.indexOf("_min:") > 0) {
         status.estop.min[line.substring(0,1)] = line.substring(6);
         status.update = true;
@@ -786,6 +792,13 @@ function on_serial_line(line) {
     if (line.indexOf("_max:") > 0) {
         status.estop.max[line.substring(0,1)] = line.substring(6);
         status.update = true;
+    }
+    if (line.indexOf("filament: ") >= 0) {
+        status.estop.filament = line.substring(10).trim();
+        filament = (status.estop.filament === 'TRIGGERED');
+        if (status.print.run && !status.print.pause) {
+            job_pause("filament runout detected");
+        }
     }
 
     // parse Marlin version
@@ -1034,7 +1047,7 @@ function process_input_two(line, channel) {
             return status.feed = parseFloat(arg);
         case "*bounce":
             return sport ? sport.close() : null;
-        case "debug":
+        case "*debug":
             if (toks[1] === "on") debug = true;
             if (toks[1] === "off") debug = false;
             return;
@@ -1073,7 +1086,7 @@ function process_input_two(line, channel) {
                 return evtlog("job in progress", {channel});
             }
             if (toks.length > 1) {
-                file = args;
+                file = arg;
                 if (file.indexOf(".gcode") < 0) {
                     file += ".gcode";
                 }
