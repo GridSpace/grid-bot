@@ -1440,7 +1440,38 @@ function process_queue() {
     processing = false;
 };
 
+let inloop = [];
+
 function queue(line, flags) {
+    // handle M808 looping
+    if (line.indexOf('M808') === 0) {
+        let toks = line.split(' ');
+        if (toks[1] && toks[1].charAt(0) === 'L') {
+            // start loop
+            let newloop = [];
+            newloop.count = parseInt(toks[1].substring(1));
+            inloop.push(newloop);
+            return;
+        } else {
+            //end loop
+            if (inloop.length) {
+                let loop = inloop.pop();
+                let count = loop.count ? loop.count + 1 : 1;
+                while (count-- > 0) {
+                    for (let rec of loop) {
+                        queue(rec.line, rec.flags);
+                    }
+                }
+                return;
+            } else {
+                evtlog(`M808 end of non-existent loop`);
+            }
+        }
+    }
+    if (inloop.length) {
+        inloop[inloop.length-1].push({line, flags});
+        return;
+    }
     // special goto 0,0 after G28 because safe probe offset
     let returnHome = false;
     if (line.indexOf('G28') >= 0) {
