@@ -1044,6 +1044,15 @@ function process_input_two(line, channel) {
         case "*buf":
             return bufmax = parseInt(arg);
         case "*feed":
+            let feed = parseFloat(arg);
+            let feedcmd = `M220 S${Math.round(feed*100)}`;
+            if (buf.length) {
+                let head = buf[0];
+                let checksum = (head.flags && head.flags.checksum) || false;
+                queue_priority(feedcmd, {checksum});
+            } else {
+                queue_priority(feedcmd);
+            }
             return status.feed = parseFloat(arg);
         case "*bounce":
             return sport ? sport.close() : null;
@@ -1616,35 +1625,35 @@ function write(line, flags) {
                     toks = toks.filter(t => t.charAt(0) !== 'E');
                 }
                 // adjust feed scaling
-                if (!status.pos.feed) {
-                    status.pos.feed = status.feed;
-                }
-                let newfeed = status.feed !== status.pos.feed;
-                let realf = null;
-                if (newfeed || status.feed !== 1) {
-                    let scaled = false;
-                    toks = toks.map(tok => {
-                        if (tok.charAt(0) === 'F') {
-                            scaled = true;
-                            realf = parseFloat(tok.substring(1));
-                            let nfeed = Math.round(realf * status.feed);
-                            return `F${nfeed}`;
-                        } else {
-                            return tok;
-                        }
-                    });
-                    if (scaled) {
-                        // line had F and was re-scaled
-                        line = toks.join(' ');
-                        status.pos.feed = status.feed;
-                    } else if (status.pos.F && newfeed) {
-                        // line had no F, so we synthesize one
-                        toks.push(`F${Math.round(status.pos.F * status.feed)}`);
-                        line = toks.join(' ');
-                        realf = status.pos.F;
-                        status.pos.feed = status.feed;
-                    }
-                }
+                // if (!status.pos.feed) {
+                //     status.pos.feed = status.feed;
+                // }
+                // let newfeed = status.feed !== status.pos.feed;
+                // let realf = null;
+                // if (newfeed || status.feed !== 1) {
+                //     let scaled = false;
+                //     toks = toks.map(tok => {
+                //         if (tok.charAt(0) === 'F') {
+                //             scaled = true;
+                //             realf = parseFloat(tok.substring(1));
+                //             let nfeed = Math.round(realf * status.feed);
+                //             return `F${nfeed}`;
+                //         } else {
+                //             return tok;
+                //         }
+                //     });
+                //     if (scaled) {
+                //         // line had F and was re-scaled
+                //         line = toks.join(' ');
+                //         status.pos.feed = status.feed;
+                //     } else if (status.pos.F && newfeed) {
+                //         // line had no F, so we synthesize one
+                //         toks.push(`F${Math.round(status.pos.F * status.feed)}`);
+                //         line = toks.join(' ');
+                //         realf = status.pos.F;
+                //         status.pos.feed = status.feed;
+                //     }
+                // }
                 // extract position from gcode
                 toks.slice(1).forEach(t => {
                     let axis = t.charAt(0);
@@ -1660,9 +1669,9 @@ function write(line, flags) {
                     }
                 });
                 // store the real F, not the scaled one
-                if (realf) {
-                    status.pos.F = realf;
-                }
+                // if (realf) {
+                //     status.pos.F = realf;
+                // }
             } else if (toks[0] === 'G90') {
                 status.pos.rel = false;
             } else if (toks[0] === 'G91') {
