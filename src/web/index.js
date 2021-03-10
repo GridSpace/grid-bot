@@ -611,7 +611,7 @@ function vids_update() {
     let time = Date.now();
     let img = new Image();
     // let url = `http://10.10.10.111/camera.jpg?time=${time}`;
-    let url = `http://${location.hostname}/camera.jpg?time=${time}`;
+    let url = `http://${location.hostname}:4080/camera.jpg?time=${time}`;
     let now = Date.now();
     let frame = $('page-vids');
     img.onload = () => {
