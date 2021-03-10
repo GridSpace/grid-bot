@@ -627,7 +627,9 @@ function on_serial_line(line) {
     let isOK = line.indexOf("ok") === 0;
 
     // parse M105/M155 temperature updates
-    if (line.indexOf("T:") === 0 || line.indexOf("ok T:") === 0) {
+    let tpos = line.indexOf("T:");
+    if (tpos >= 0 && tpos < 6) {
+        line = line.replace('TT:','T:').replace('BB:','B:').replace(/::/g,':').replace(/\/\//g,'/');
         let check = isOK ? line.substring(3) : line;
         // eliminate spaces before slashes " /"
         let toks = check.replace(/ \//g,'/').split(' ');
