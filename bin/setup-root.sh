@@ -10,7 +10,7 @@ cp /home/pi/grid-bot/bin/root-rc.local /etc/rc.local
 grep ^xserver-allow-tcp=true /etc/lightdm/lightdm.conf || echo xserver-allow-tcp=true >> /etc/lightdm/lightdm.conf
 
 # redirect port 80 to 4080 with default index.html
-echo '<html><head><script>document.location=`http://${location.hostname}:4080/`</script></head></html>' > /var/www/html/index.html
+#echo '<html><head><script>document.location=`http://${location.hostname}:4080/`</script></head></html>' > /var/www/html/index.html
 
 # update pacakges
 [ ! -f ${HOME}/.gb-up ] && apt -y update && apt -y dist-upgrade && touch ${HOME}/.gb-up

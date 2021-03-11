@@ -34,5 +34,6 @@ while /bin/true; do
         -l ${FILE_PERM:-/var/www/html/camera.jpg} \
         -t ${TIMEOUT:-500} \
         -ss ${EXPOSURE:-40000} \
-        -rot ${ROTATION:-90}
+        -rot ${ROTATION:-90} \
+		-awb ${BALANCE:-greyworld}
 done
