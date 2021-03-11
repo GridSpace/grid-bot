@@ -10,17 +10,17 @@
  * firmwares.
  */
 
-const vernum = "019";
+const vernum = "020";
 const version = `Serial [${vernum}]`;
-
-const LineBuffer = require("./linebuffer");
+const gridsend = require('./gridsend');
+const WebSocket = require('ws');
 const SerialPort = require('serialport');
+const LineBuffer = require("./linebuffer");
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const opt = require('minimist')(process.argv.slice(2));
 const net = require('net');
 const fs = require('fs');
-
 const os = require('os');
 const url = require('url');
 const http = require('http');
@@ -28,7 +28,6 @@ const https = require('https');
 const serve = require('serve-static');
 const moment = require('moment');
 const connect = require('connect');
-const WebSocket = require('ws');
 const bedclear = "etc/bedclear";
 const oport = opt.device || opt.port || opt._[0]; // serial port device path
 
@@ -68,7 +67,6 @@ let ctrlport = opt.listen;
 let gridlast = '*';
 let extra = opt.extra;
 let errend = opt.errend || false;
-
 let checksum = opt.checksum;    // use line numbers and checksums
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
@@ -110,7 +108,6 @@ let buf_free = Infinity;        // remaing buffer slots
 let buf_maxx = -Infinity;       // max buf_free observed
 let pln_free = Infinity;        // remaining planner slots
 let pln_maxx = -Infinity;       // max pln_free observed
-
 let config = {};                // loaded config files
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
@@ -1892,81 +1889,6 @@ function get_set_uuid() {
     }
 }
 
-function grid_spool() {
-    if (opt.nogrid) {
-        return;
-    }
-    let timer = Date.now();
-    let killer = null;
-    const stat = encodeURIComponent(JSON.stringify(status));
-    const uuid = encodeURIComponent(status.device.uuid);
-    const opts = [
-        `uuid=${uuid}`,
-        `stat=${stat}`,
-        `last=${gridlast}`,
-        `time=${timer.toString(36)}`,
-        `type=gb-${vernum}`
-    ].join('&');
-    const retry = function(time) {
-        if (killer) {
-            clearTimeout(killer);
-        }
-        setTimeout(grid_spool, time);
-    };
-    // console.log({up: grid, opts});
-    const proto = grid.indexOf("https:") >= 0 ? https : http;
-    const req = proto.get(`${grid}/api/grid_up?${opts}`, (res) => {
-        const { headers, statusCode, statusMessage } = res;
-        gridlast = '*';
-        // console.log([headers, statusCode, statusMessage]);
-        let body = '';
-        res.on('data', data => {
-            body += data.toString();
-        });
-        res.on('end', () => {
-            timer = Date.now() - timer;
-            if (body === 'superceded') {
-                // we have overlapping outbound calls (bad on us)
-                console.log({grid_up: body});
-                return;
-            }
-            if (body === 'reconnect') {
-                // console.log({reconnect: timer});
-                retry(100);
-            } else {
-                let [file, gcode] = body.split("\0");
-                if (file && gcode) {
-                    console.log({file, gcode: gcode.length});
-                    gridlast = file;
-                    fs.writeFile(path.join(filedir, file), gcode, () => {
-                        check_file_dir(true);
-                        if (mode !== 'cnc') {
-                            kick_named(path.join(filedir, file));
-                        }
-                    });
-                } else {
-                    if (body.length > 80) {
-                        body = body.split('\n').slice(0,10);
-                    }
-                    console.log({grid_up_reply: body, timer});
-                }
-                retry(1000);
-            }
-        });
-        res.on('error', error => {
-            console.log({http_get_error: error});
-            retry(2000);
-        });
-    }).on('error', error => {
-        console.log({grid_up_error: error});
-        retry(2000);
-    });
-    killer = setTimeout(() => {
-        console.log("killing zombied connection @ 10 min idle");
-        req.destroy();
-    }, 600000);
-}
-
 // -- start it up --
 
 if (opt.help) {
@@ -2107,7 +2029,7 @@ function startup() {
     find_net_address();
     check_camera();
     if (opt.register !== false) {
-        grid_spool();
+        gridsend.start(`db-${vernum}`, grid, filedir, status, kick_named);
     }
 }
 
