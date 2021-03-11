@@ -1,7 +1,9 @@
 #!/bin/bash
 
+[ `whoami` == 'root' ] && echo "run this script as the user 'pi'" && exit
+
 # require some packages
-sudo apt -y install automake avrdude g++ git nginx unclutter vim wget
+sudo apt -y install automake avrdude g++ git unclutter vim wget
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
 
