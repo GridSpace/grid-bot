@@ -1,13 +1,13 @@
 module.exports = { start, stop, status };
 
-function start(type, url, filedir, status, kick) {
+function start(type, url, status, update) {
     if (req) {
         throw "grid send already started";
     }
     console.log({starting: "gridsend", url});
     proto = url.indexOf("https:") >= 0 ? https : http;
     stopped = false;
-    looper(type, url, filedir, status, kick);
+    looper(type, url, status, update);
 }
 
 function stop() {
@@ -24,12 +24,14 @@ function status() {
 
 const https = require('https');
 const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
 let gridlast = '*';
 let stopped;
 let req;
 
-function looper(type, url, filedir, status, kick) {
+function looper(type, url, status, update) {
     let timer = Date.now();
     let killer = null;
 
@@ -49,7 +51,7 @@ function looper(type, url, filedir, status, kick) {
             return;
         }
         setTimeout(() => {
-            looper(type, url, filedir, status, kick);
+            looper(type, url, status, update);
         }, time);
     };
 
@@ -76,12 +78,7 @@ function looper(type, url, filedir, status, kick) {
                 if (file && gcode) {
                     console.log({file, gcode: gcode.length});
                     gridlast = file;
-                    fs.writeFile(path.join(filedir, file), gcode, () => {
-                        check_file_dir(true);
-                        if (mode !== 'cnc') {
-                            kick(path.join(filedir, file));
-                        }
-                    });
+                    update(file, gcode);
                 } else {
                     if (body.length > 80) {
                         body = body.split('\n').slice(0,10);

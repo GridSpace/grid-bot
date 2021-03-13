@@ -2029,7 +2029,15 @@ function startup() {
     find_net_address();
     check_camera();
     if (opt.register !== false) {
-        gridsend.start(`db-${vernum}`, grid, filedir, status, kick_named);
+        gridsend.start(`db-${vernum}`, grid, status, (file,  gcode) => {
+            let fpath = path.join(filedir, file);
+            fs.writeFile(fpath, gcode, () => {
+                check_file_dir(true)
+                if (mode !== 'cnc') {
+                    kick_named(fpath);
+                }
+            });
+        });
     }
 }
 
