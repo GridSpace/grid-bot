@@ -986,6 +986,7 @@ function send_file(filename, tosd) {
             gcode.forEach(line => {
                 queue(line, {print: true, checksum: true});
             });
+            bed_dirty();
         }
         queue(`M155 S2`);
     } catch (e) {
