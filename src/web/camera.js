@@ -5,7 +5,10 @@ function init() {
     updateImage();
 }
 
+let recover;
+
 function updateImage() {
+    clearTimeout(recover);
     let time = Date.now();
     let img = new Image();
     let url = `http://${location.hostname}/camera.jpg?time=${time}`;
@@ -13,5 +16,9 @@ function updateImage() {
         document.documentElement.style.setProperty('--image-url', `url(${url})`);
         setTimeout(updateImage, 1000);
     };
+    img.onerror = () => {
+        setTimeout(updateImage, 1000);
+    };
     img.src = url;
+    recover = setTimeout(updateImage, 5000);
 }
