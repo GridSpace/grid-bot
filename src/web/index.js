@@ -631,6 +631,7 @@ function vids_update() {
             img.style.height = `${100 * rat}%`;
         }
     };
+    img.onerror = vids_update;
     img.src = url;
 }
 
