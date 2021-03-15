@@ -514,6 +514,13 @@ function on_quiescence() {
     onboot = [];
 }
 
+function parseTemp(str, fix) {
+    if (fix) {
+        str = str.substring(str.length/2);
+    }
+    return parseFloat(str);
+}
+
 // handle a single line of serial input
 function on_serial_line(line) {
     clearTimeout(pln_timer);
@@ -626,24 +633,29 @@ function on_serial_line(line) {
     // parse M105/M155 temperature updates
     let tpos = line.indexOf("T:");
     if (tpos >= 0 && tpos < 6) {
-        line = line.replace('TT:','T:').replace('BB:','B:').replace(/::/g,':').replace(/\/\//g,'/');
+        let tempfix = line.indexOf('TT:') >= 0;
+        line = line
+            .replace('TT:','T:')
+            .replace('BB:','B:')
+            .replace(/::/g,':')
+            .replace(/\/\//g,'/');
         let check = isOK ? line.substring(3) : line;
         // eliminate spaces before slashes " /"
-        let toks = check.replace(/ \//g,'/').split(' ');
+        let toks = check.replace(/ +\//g,'/').split(' ');
         // parse extruder/bed temps
         toks.forEach(tok => {
             tok = tok.split(":");
             switch (tok[0]) {
                 case 'T':
                     tok = tok[1].split("/");
-                    status.temp.ext[0] = parseFloat(tok[0]);
-                    status.target.ext[0] = parseFloat(tok[1]);
+                    status.temp.ext[0] = parseTemp(tok[0], tempfix);
+                    status.target.ext[0] = parseTemp(tok[1], tempfix);
                     status.update = true;
                     break;
                 case 'B':
                     tok = tok[1].split("/");
-                    status.temp.bed = parseFloat(tok[0]);
-                    status.target.bed = parseFloat(tok[1]);
+                    status.temp.bed = parseTemp(tok[0], tempfix);
+                    status.target.bed = parseTemp(tok[1], tempfix);
                     status.update = true;
                     break;
             }
@@ -1011,8 +1023,8 @@ function process_input_two(line, channel) {
     line = line.toString().trim();
     // rewrite *name to an *exec call
     if (line.indexOf("*name ") === 0) {
+        status.device.name = line.split(' ').slice(1).join(' ');
         line = `*exec sudo bin/update-name.sh ${status.device.name}`;
-        status.device.name = line.split(' ').slice(3).join(' ');
     }
     // rewrite *wifi to an *exec call
     if (line.indexOf("*wifi ") === 0) {
