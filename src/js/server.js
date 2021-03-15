@@ -917,7 +917,9 @@ function bed_dirty() {
     status.update = true;
     send_status();
     try {
-        fs.unlinkSync(bedclear);
+        if (lsmod(bedclear)) {
+            fs.unlinkSync(bedclear);
+        }
     } catch (e) {
         console.log(e);
     }
