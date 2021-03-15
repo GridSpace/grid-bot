@@ -1,4 +1,4 @@
-module.exports = { start, stop, status };
+module.exports = { start, restart, stop, status };
 
 function start(type, url, status, update) {
     if (req) {
@@ -12,6 +12,13 @@ function start(type, url, status, update) {
 
 function stop() {
     stopped = true;
+    if (req) {
+        req.destroy();
+        req = undefined;
+    }
+}
+
+function restart() {
     if (req) {
         req.destroy();
         req = undefined;
@@ -95,9 +102,7 @@ function looper(type, url, status, update) {
         retry(2000);
     });
     killer = setTimeout(() => {
-        console.log("killing zombied connection @ 10 min idle");
-        if (req) {
-            req.destroy();
-        }
-    }, 600000);
+        console.log("killing zombied connection @ 3 min idle");
+        restart();
+    }, 3 * 60 * 1000);
 }

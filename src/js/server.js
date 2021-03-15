@@ -917,7 +917,7 @@ function bed_dirty() {
     status.update = true;
     send_status();
     try {
-        if (lsmod(bedclear)) {
+        if (lastmod(bedclear)) {
             fs.unlinkSync(bedclear);
         }
     } catch (e) {
@@ -1057,6 +1057,12 @@ function process_input_two(line, channel) {
             return evtlog(tokenize_line(line.substring(5)).join(','));
         case "*buf":
             return bufmax = parseInt(arg);
+        case "*bump":
+            if (gridsend) {
+                console.log("restart gridsend");
+                gridsend.restart();
+            }
+            break;
         case "*feed":
             let feed = parseFloat(arg);
             let feedcmd = `M220 S${Math.round(feed*100)}`;
