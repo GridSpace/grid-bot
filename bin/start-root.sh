@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export ROOT=/home/pi/grid-bot
+mkdir -p /var/www/html
 
 # redirect traffic from port 80 to gridbot interface
 iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 4080
