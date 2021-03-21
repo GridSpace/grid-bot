@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const vernum = "020";
+const vernum = "021";
 const version = `Serial [${vernum}]`;
 const gridsend = require('./gridsend');
 const WebSocket = require('ws');
@@ -105,9 +105,9 @@ let wait_time = 10000;
 let printCache = {};            // cache of print
 let known = {};                 // known files
 let buf_free = Infinity;        // remaing buffer slots
-let buf_maxx = -Infinity;       // max buf_free observed
+let buf_maxx = 0;               // max buf_free observed
 let pln_free = Infinity;        // remaining planner slots
-let pln_maxx = -Infinity;       // max pln_free observed
+let pln_maxx = 0;               // max pln_free observed
 let config = {};                // loaded config files
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
@@ -1395,7 +1395,7 @@ function process_queue() {
     clearTimeout(pln_timer);
     clearTimeout(buf_timer);
     // wait for buffer and planner to catch up before sending more
-    if (pln_free <= bufmax) {
+    if (pln_maxx && pln_free <= pln_maxx / 5) {
         let pln_last = acks;
         pln_timer = setTimeout(() => {
             if (pln_last === acks) {
@@ -1408,7 +1408,7 @@ function process_queue() {
         }, 100);
         return;
     }
-    if (buf_free <= bufmax) {
+    if (buf_maxx && buf_free <= bufmax / 5) {
         let buf_last = acks;
         buf_timer = setTimeout(() => {
             if (buf_last === acks) {
