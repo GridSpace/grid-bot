@@ -3,6 +3,7 @@
 [ `whoami` == 'root' ] && echo "run this script as the user 'pi'" && exit
 
 # require some packages
+sudo apt update
 sudo apt -y install automake avrdude g++ git unclutter vim wget
 
 [ -z "${HOME}" ] && echo "HOME not set" && exit
@@ -46,9 +47,12 @@ if [ ! -d node ]; then
     }
     # for pi 3
     grep ARMv7 /proc/cpuinfo && {
-        wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv7l.tar.xz
-        tar xf node-v10.15.3-linux-armv7l.tar.xz
-        ln -sf node-v10.15.3-linux-armv7l node
+        wget https://nodejs.org/dist/latest-v14.x/node-v14.16.0-linux-armv7l.tar.xz
+        tar xf node-v14.16.0-linux-armv7l.tar.xz
+        ln -sf node-v14.16.0-linux-armv7l node
+        #wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv7l.tar.xz
+        #tar xf node-v10.15.3-linux-armv7l.tar.xz
+        #ln -sf node-v10.15.3-linux-armv7l node
     }
 fi
 
