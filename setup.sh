@@ -41,9 +41,12 @@ if [ ! -d node ]; then
     echo "downloading nodejs"
     # for pi zero
     grep ARMv6 /proc/cpuinfo && {
-        wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv6l.tar.xz
-        tar xf node-v10.15.3-linux-armv6l.tar.xz
-        ln -sf node-v10.15.3-linux-armv6l node
+        wget https://unofficial-builds.nodejs.org/download/release/v14.16.0/node-v14.16.0-linux-armv6l.tar.xz
+        tar xf node-v14.16.0-linux-armv6l.tar.xz
+        ln -sf node-v14.16.0-linux-armv6l node
+        #wget https://nodejs.org/dist/v10.15.3/node-v10.15.3-linux-armv6l.tar.xz
+        #tar xf node-v10.15.3-linux-armv6l.tar.xz
+        #ln -sf node-v10.15.3-linux-armv6l node
     }
     # for pi 3
     grep ARMv7 /proc/cpuinfo && {

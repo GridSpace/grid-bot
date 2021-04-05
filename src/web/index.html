@@ -24,10 +24,11 @@
             <div id="menu" class="col items-center">
                 <div id="menu-home"><i class="fas fa-home"></i></div>
                 <div id="menu-move"><i class="fas fa-expand-arrows-alt"></i></div>
-                <div id="menu-file"><i class="fas fa-file-alt"></i></div>
+                <div id="menu-file"><i class="fas fa-running"></i></div>
                 <div id="menu-mill"><i class="fas fa-rainbow"></i></div>
-                <div id="menu-comm"><i class="fas fa-caret-square-right"></i></div>
                 <div id="menu-vids"><i class="fas fa-video"></i></div>
+                <div id="menu-macr"><i class="fas fa-list"></i></div>
+                <div id="menu-comm"><i class="fas fa-terminal"></i></div>
                 <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
             </div>
 
@@ -62,10 +63,16 @@
                         <div id="print-spacer" class="grow"></div>
                         <div id="heating" class="col">
                             <div class="row">
-                                <label class="grow">Nozzle</label>
+                                <label class="grow">Nozzle 1</label>
                                 <input id="nozzle_at" disabled="true" value="" size="5"></input>
                                 <input id="nozzle_temp" value="" size="5" class="editable"></input>
                                 <button id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
+                            </div>
+                            <div id="nozzle2" class="row">
+                                <label class="grow">Nozzle 2</label>
+                                <input id="nozzle2_at" disabled="true" value="" size="5"></input>
+                                <input id="nozzle2_temp" value="" size="5" class="editable"></input>
+                                <button id="nozzle2_toggle" onclick="nozzle2_toggle()">on</button>
                             </div>
                             <div class="row">
                                 <label class="grow">Bed</label>
@@ -310,10 +317,10 @@
                 <div id="page-vids" class="col"></div>
 
                 <div id="page-ctrl" class="col">
-                    <label>Settings</label>
-                    <div id="settings" class="col shrink"></div>
-                    <div class="grow zero"></div>
-                    <label>Actions</label>
+                    <div id="settings" class="col grow"></div>
+                </div>
+
+                <div id="page-macr" class="col">
                     <div id="actions" class="row">
                         <div class="grow"></div>
                         <div class="col">

@@ -56,6 +56,19 @@ const MCODE = {
     M914: "stallguard"
 };
 
+let MACROS = {
+    "eeprom save":      "M500",
+    "eeprom load":      "M501; M503",
+    "endstop update":   "M119",
+    "axes postion":     "M114",
+    "nozzle pid":       "M303 S220 C8 U1 E0",
+    "bed probe":        "G29 P1; G29 T",
+    "ctrl update":      "*exec bin/update-code.sh",
+    "ctrl restart":     "*exit",
+    "system reboot":    "*exec sudo reboot",
+    "system halt":      "*exec sudo halt -p"
+};
+
 let baud = parseInt(opt.baud || "250000");
 let webport = parseInt(opt.web || opt.webport || 4080) || 0;
 let webdir = opt.webdir || "src/web";
@@ -269,7 +282,7 @@ function set_config(obj) {
 
 function load_config() {
     try {
-        config = { on: {} };
+        config = { on: {}, macros: MACROS };
 
         // hand-edited
         if (lastmod('etc/server.json')) {
@@ -645,11 +658,15 @@ function on_serial_line(line) {
         // parse extruder/bed temps
         toks.forEach(tok => {
             tok = tok.split(":");
+            let ext = 0;
             switch (tok[0]) {
+                case 'T1':
+                    ext = 1;
+                case 'T0':
                 case 'T':
                     tok = tok[1].split("/");
-                    status.temp.ext[0] = parseTemp(tok[0], tempfix);
-                    status.target.ext[0] = parseTemp(tok[1], tempfix);
+                    status.temp.ext[ext] = parseTemp(tok[0], tempfix);
+                    status.target.ext[ext] = parseTemp(tok[1], tempfix);
                     status.update = true;
                     break;
                 case 'B':
@@ -1644,36 +1661,6 @@ function write(line, flags) {
                 if (extrude === false) {
                     toks = toks.filter(t => t.charAt(0) !== 'E');
                 }
-                // adjust feed scaling
-                // if (!status.pos.feed) {
-                //     status.pos.feed = status.feed;
-                // }
-                // let newfeed = status.feed !== status.pos.feed;
-                // let realf = null;
-                // if (newfeed || status.feed !== 1) {
-                //     let scaled = false;
-                //     toks = toks.map(tok => {
-                //         if (tok.charAt(0) === 'F') {
-                //             scaled = true;
-                //             realf = parseFloat(tok.substring(1));
-                //             let nfeed = Math.round(realf * status.feed);
-                //             return `F${nfeed}`;
-                //         } else {
-                //             return tok;
-                //         }
-                //     });
-                //     if (scaled) {
-                //         // line had F and was re-scaled
-                //         line = toks.join(' ');
-                //         status.pos.feed = status.feed;
-                //     } else if (status.pos.F && newfeed) {
-                //         // line had no F, so we synthesize one
-                //         toks.push(`F${Math.round(status.pos.F * status.feed)}`);
-                //         line = toks.join(' ');
-                //         realf = status.pos.F;
-                //         status.pos.feed = status.feed;
-                //     }
-                // }
                 // extract position from gcode
                 toks.slice(1).forEach(t => {
                     let axis = t.charAt(0);
@@ -1688,10 +1675,6 @@ function write(line, flags) {
                         status.print.emit += val;
                     }
                 });
-                // store the real F, not the scaled one
-                // if (realf) {
-                //     status.pos.F = realf;
-                // }
             } else if (toks[0] === 'G90') {
                 status.pos.rel = false;
             } else if (toks[0] === 'G91') {

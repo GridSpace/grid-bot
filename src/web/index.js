@@ -753,8 +753,8 @@ function status_update(status) {
             $('nozzle_temp').classList.remove('bg_red');
             $('nozzle_toggle').innerText = 'on';
         }
-        $('nozzle_at').value = Math.round(status.temp.ext);
-        $('hdr_nozl').innerText = Math.round(status.temp.ext);
+        $('nozzle_at').value = Math.round(status.temp.ext[0]);
+        $('hdr_nozl').innerText = Math.round(status.temp.ext[0]);
     }
     if (status.pos) {
         $('xpos').value = parseFloat(status.pos.X).toFixed(2);
@@ -960,7 +960,8 @@ function init() {
         mill: $('menu-mill'),
         comm: $('menu-comm'),
         vids: $('menu-vids'),
-        ctrl: $('menu-ctrl')
+        ctrl: $('menu-ctrl'),
+        macr: $('menu-macr')
     };
     for (name in menu) {
         let key = name.split('-')[0];

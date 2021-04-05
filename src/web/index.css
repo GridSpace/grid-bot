@@ -194,7 +194,7 @@ button:active {
     font-weight: bold;
     padding: 10px;
 }
-#bed_at,#nozzle_at,#bed_temp,#nozzle_temp {
+#bed_at,#nozzle_at,#nozzle2_at,#bed_temp,#nozzle_temp,#nozzle2_temp {
     width: 60px;
     margin-left: 0;
 }
@@ -258,6 +258,12 @@ button:active {
 }
 #page-file {
     min-height: 0;
+}
+#menu-file svg {
+    font-size: larger;
+}
+#menu-terminal svg {
+    font-size: smaller;
 }
 #file-list-wrap {
     overflow-y: auto;
