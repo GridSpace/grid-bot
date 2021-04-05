@@ -353,24 +353,41 @@ function nozzle_toggle() {
     let toggle = $('nozzle_toggle');
     if (toggle.innerText === 'on') {
         toggle.innerText = 'off';
-        send('M104 S' + nozzle_temp());
+        send(`M104 S${nozzle2_temp()} T0`);
         send('M105');
     } else {
         toggle.innerText = 'on';
-        send('M104 S0');
+        send('M104 S0 T0');
+        send('M105');
+    }
+}
+
+function nozzle_toggle2() {
+    let toggle = $('nozzle2_toggle');
+    if (toggle.innerText === 'on') {
+        toggle.innerText = 'off';
+        send(`M104 S${nozzle2_temp()} T1`);
+        send('M105');
+    } else {
+        toggle.innerText = 'on';
+        send('M104 S0 T1');
         send('M105');
     }
 }
 
 function preheat() {
     if (alert_on_run()) return;
-    send(`M104 S${persist.default_nozzle || 220}`);
+    send(`M104 S${persist.default_nozzle || 220} T0`);
     send(`M140 S${persist.default_bed || 65}`);
     send('M105');
 }
 
 function nozzle_temp() {
     return parseInt($('nozzle_temp').value || '0');
+}
+
+function nozzle2_temp() {
+    return parseInt($('nozzle2_temp').value || '0');
 }
 
 function filament_load() {
@@ -803,7 +820,21 @@ function status_update(status) {
             $('nozzle_temp').classList.remove('bg_red');
             $('nozzle_toggle').innerText = 'on';
         }
+        if (status.target.ext[1] > 0) {
+            if ($('nozzle2_temp') !== input) {
+                $('nozzle2_temp').value = status.target.ext[1];
+            }
+            $('nozzle2_temp').classList.add('bg_red');
+            $('nozzle2_toggle').innerText = 'off';
+        } else {
+            if ($('nozzle2_temp') !== input) {
+                $('nozzle2_temp').value = 0;
+            }
+            $('nozzle2_temp').classList.remove('bg_red');
+            $('nozzle2_toggle').innerText = 'on';
+        }
         $('nozzle_at').value = Math.round(status.temp.ext[0]);
+        $('nozzle2_at').value = Math.round(status.temp.ext[1] || -1);
         $('hdr_nozl').innerText = Math.round(status.temp.ext[0]);
     }
     if (status.pos) {
@@ -1121,9 +1152,17 @@ function init() {
     };
     let setnozzle = $('nozzle_temp').onkeyup = ev => {
         if (ev === 42 || ev.keyCode === 13) {
-            send('M104 S' + nozzle_temp());
+            send(`M104 S${nozzle_temp()} T0`);
             send('M105');
             $('nozzle_toggle').innerText = 'off';
+            input_deselect();
+        }
+    };
+    let setnozzle2 = $('nozzle2_temp').onkeyup = ev => {
+        if (ev === 42 || ev.keyCode === 13) {
+            send(`M104 S${nozzle2_temp()} T1`);
+            send('M105');
+            $('nozzle2_toggle').innerText = 'off';
             input_deselect();
         }
     };
