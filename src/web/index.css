@@ -388,16 +388,18 @@ button:active {
     white-space: nowrap;
     font-size: smaller;
 }
-#actions label {
-    font-weight: bold;
-    text-align: center;
+#macros {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto;
+    column-gap: 5px;
+    row-gap: 5px;
+    margin: 5px;
+    overflow-y: auto;
 }
-#actions button {
-    margin-top: 5px;
-    min-width: 8em;
-}
-#actions > div {
-    margin-right: 5px;
+#macros button, #macros input {
+    padding: 4px;
+    margin: 0;
 }
 .row {
     display: flex;

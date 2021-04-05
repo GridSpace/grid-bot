@@ -680,8 +680,58 @@ function set_progress(val) {
     pbar.style.width = `${pval}px`;
 }
 
+function run_macro(key) {
+    let macro = last_cfg.macros[key];
+    if (macro) {
+        send(macro[1]);
+        console.log({run_macro: key, cmd: macro});
+    }
+}
+
+function del_macro(key) {
+    delete last_cfg.macros[key];
+    set_config();
+    config_update(last_cfg);
+}
+
+function set_macro(key, value) {
+    last_cfg.macros[key] = value;
+    set_config();
+    config_update(last_cfg);
+}
+
+function add_macro() {
+    set_macro($('new_macro').value, $('new_macro_value').value);
+}
+
+function set_config() {
+    send(`*set-config ${encodeURIComponent(JSON.stringify(last_cfg))}`);
+}
+
 function config_update(config) {
     console.log({config});
+    // update macros list
+    let list = Object.entries(config.macros).sort((a,b) => {
+        return a[0] < b[0] ? -1 : 1;
+    });
+    let html = [];
+    for (let [key, val] of list) {
+        html.push(`<button onclick="run_macro('${key}')">${key}</button>`);
+        html.push(`<input key="${key}" class="tag" value="${val}">`);
+        html.push(`<button onclick="del_macro('${key}')"><i class="far fa-trash-alt"></i></button>`);
+    }
+    html.push(`<input id="new_macro" value="new macro" />`);
+    html.push(`<input id="new_macro_value" value="new macro value" />`);
+    html.push(`<button onclick="add_macro()"><i class="fas fa-plus"></i></button>`);
+
+    $('macros').innerHTML = html.join('');
+    for (let inp of [...document.querySelectorAll("[class='tag']")]) {
+        inp.onkeyup = (ev) => { 
+            if (ev.keyCode === 13) {
+                set_macro(inp.getAttribute("key"), inp.value);
+            }
+        };
+    }
 }
 
 function status_update(status) {
@@ -883,8 +933,6 @@ function set_mode_cnc() {
         filego.innerText = run_verb;
     }
     $('file-box').style.display = '';
-    // control
-    $('ctrl-run-fdm').style.display = 'none';
 }
 
 function set_mode_fdm() {
@@ -910,8 +958,6 @@ function set_mode_fdm() {
         filego.innerText = run_verb;
     }
     $('file-box').style.display = 'none';
-    // control
-    $('ctrl-run-fdm').style.display = '';
 }
 
 function bind_arrow_keys() {

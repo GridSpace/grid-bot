@@ -1184,7 +1184,7 @@ function process_input_two(line, channel) {
             }
             return send_status(pretty);
         case "*set-config":
-            set_config(JSON.parse(arg));
+            return set_config(JSON.parse(decodeURIComponent(arg)));
         case "*get-config":
         case "*config":
             return evtlog({config}, {channel, status:true});

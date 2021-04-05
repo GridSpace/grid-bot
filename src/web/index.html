@@ -321,35 +321,7 @@
                 </div>
 
                 <div id="page-macr" class="col">
-                    <div id="actions" class="row">
-                        <div class="grow"></div>
-                        <div class="col">
-                            <label>EEPROM</label>
-                            <button onclick="eeprom_save()">save</button>
-                            <button onclick="eeprom_restore()">restore</button>
-                        </div>
-                        <div class="col">
-                            <label>Update</label>
-                            <button onclick="send_safe('M119')">endstops</button>
-                            <button onclick="send_safe('M114')">position</button>
-                        </div>
-                        <div id="ctrl-run-fdm" class="col">
-                            <label>Run</label>
-                            <button onclick="calibrate_pid()">nozzle pid</button>
-                            <button onclick="probe_bed()">bed probe</button>
-                        </div>
-                        <div class="col">
-                            <label>Controller</label>
-                            <button onclick="update_code()">update</button>
-                            <button onclick="controller_restart()">restart</button>
-                        </div>
-                        <div class="col">
-                            <label>System</label>
-                            <button onclick="reboot()">reboot</button>
-                            <button onclick="shutdown()">shutdown</button>
-                        </div>
-                        <div class="grow"></div>
-                    </div>
+                    <div id="macros"></div>
                 </div>
 
             </div>
