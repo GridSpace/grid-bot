@@ -791,6 +791,15 @@ function status_update(status) {
         }
         $('elapsed').value = elapsed(duration);
     }
+    if (status.temp && status.temp.ext) {
+        if (status.temp.ext.length < 2) {
+            $('nozzle2').style.display = 'none';
+            $('nozzle_label').innerText = 'Nozzle';
+        } else {
+            $('nozzle2').style.display = '';
+            $('nozzle_label').innerText = 'Nozzle 1';
+        }
+    }
     if (status.target) {
         if (status.target.bed > 0) {
             if ($('bed_temp') !== input) {
@@ -1221,6 +1230,19 @@ function init() {
             persist.default_nozzle = sel.value;
         }
     }
+    $('nozzle2_temp').onclick = (ev) => {
+        input_deselect();
+        if (istouch) {
+            $('keypad').style.display = '';
+            $('nozzle2_temp').setSelectionRange(10, 10);
+        }
+        input = $('nozzle2_temp');
+        input.classList.add('bg_green');
+        if (input.value === '0') {
+            input.value = persist.default_nozzle || '220';
+        }
+        ev.stopPropagation();
+    };
     $('bed_temp').onclick = (ev) => {
         input_deselect();
         if (istouch) {

@@ -27,9 +27,9 @@
                 <div id="menu-file"><i class="fas fa-running"></i></div>
                 <div id="menu-mill"><i class="fas fa-rainbow"></i></div>
                 <div id="menu-vids"><i class="fas fa-video"></i></div>
-                <div id="menu-macr"><i class="fas fa-list"></i></div>
                 <div id="menu-comm"><i class="fas fa-terminal"></i></div>
-                <div id="menu-ctrl"><i class="fas fa-cog"></i></div>
+                <div id="menu-ctrl"><i class="fas fa-list"></i></div>
+                <div id="menu-macr"><i class="fas fa-cog"></i></div>
             </div>
 
             <div id="pages" class="col grow">
@@ -63,7 +63,7 @@
                         <div id="print-spacer" class="grow"></div>
                         <div id="heating" class="col">
                             <div class="row">
-                                <label class="grow">Nozzle 1</label>
+                                <label id="nozzle_label" class="grow">Nozzle 1</label>
                                 <input id="nozzle_at" disabled="true" value="" size="5"></input>
                                 <input id="nozzle_temp" value="" size="5" class="editable"></input>
                                 <button id="nozzle_toggle" onclick="nozzle_toggle()">on</button>
