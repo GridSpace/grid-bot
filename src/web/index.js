@@ -700,7 +700,7 @@ function set_progress(val) {
 function run_macro(key) {
     let macro = last_cfg.macros[key];
     if (macro) {
-        send(macro[1]);
+        send(macro);
         console.log({run_macro: key, cmd: macro});
     }
 }
@@ -743,7 +743,7 @@ function config_update(config) {
 
     $('macros').innerHTML = html.join('');
     for (let inp of [...document.querySelectorAll("[class='tag']")]) {
-        inp.onkeyup = (ev) => { 
+        inp.onkeyup = (ev) => {
             if (ev.keyCode === 13) {
                 set_macro(inp.getAttribute("key"), inp.value);
             }
