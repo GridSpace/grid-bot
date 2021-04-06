@@ -85,7 +85,28 @@ button:active {
     right: 0;
 }
 #hdr_padd {
+    position: relative;
     width: 50px;
+    z-index: 10;
+    text-align: center;
+}
+#hdr_padd:hover #hdr_macro {
+    display: flex;
+}
+#hdr_macro {
+    display: none;
+    position: absolute;
+    padding: 3px;
+    z-index: 10;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    max-height: 480px;
+    overflow-y: auto;
+}
+#hdr_macro button {
+    font-size: 12px;
+    margin: 3px;
 }
 .mtop {
     margin-top: 20px;

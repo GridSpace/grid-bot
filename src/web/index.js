@@ -731,8 +731,10 @@ function config_update(config) {
     let list = Object.entries(config.macros).sort((a,b) => {
         return a[0] < b[0] ? -1 : 1;
     });
+    let pops = [];
     let html = [];
     for (let [key, val] of list) {
+        pops.push(`<button onclick="run_macro('${key}')">${key}</button>`);
         html.push(`<button onclick="run_macro('${key}')">${key}</button>`);
         html.push(`<input key="${key}" class="tag" value="${val}">`);
         html.push(`<button onclick="del_macro('${key}')"><i class="far fa-trash-alt"></i></button>`);
@@ -740,6 +742,8 @@ function config_update(config) {
     html.push(`<input id="new_macro" value="new macro" />`);
     html.push(`<input id="new_macro_value" value="new macro value" />`);
     html.push(`<button onclick="add_macro()"><i class="fas fa-plus"></i></button>`);
+
+    $('hdr_macro').innerHTML = pops.join('');
 
     $('macros').innerHTML = html.join('');
     for (let inp of [...document.querySelectorAll("[class='tag']")]) {
@@ -1336,5 +1340,5 @@ function init() {
     // restore settings
     set_jog(parseFloat(persist.jog_val) || 1, $(persist.jog_sel || "j100"));
     set_jog_speed(parseFloat(persist.jog_speed) || 100, $(persist.jog_speed_sel || "js0100"));
-    topbar(persist.topbar === 'true' || false);
+    topbar(persist.topbar != 'false');
 }
