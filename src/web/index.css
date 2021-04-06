@@ -91,9 +91,13 @@ button:active {
     text-align: center;
 }
 #hdr_padd:hover #hdr_macro {
-    display: flex;
+    display: grid;
 }
 #hdr_macro {
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto;
+    column-gap: 5px;
+    row-gap: 5px;
     display: none;
     position: absolute;
     padding: 3px;
@@ -105,7 +109,7 @@ button:active {
     overflow-y: auto;
 }
 #hdr_macro button {
-    font-size: 12px;
+    xfont-size: 12px;
     margin: 3px;
 }
 .mtop {
