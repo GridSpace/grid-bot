@@ -1341,4 +1341,7 @@ function init() {
     set_jog(parseFloat(persist.jog_val) || 1, $(persist.jog_sel || "j100"));
     set_jog_speed(parseFloat(persist.jog_speed) || 100, $(persist.jog_speed_sel || "js0100"));
     topbar(persist.topbar != 'false');
+    $('toptoggle').onclick = () => {
+        topbar(!eval(persist.topbar));
+    };
 }

@@ -86,9 +86,12 @@ button:active {
 }
 #hdr_padd {
     position: relative;
-    width: 50px;
-    z-index: 10;
     text-align: center;
+    width: 50px;
+}
+#hdr_padd label {
+    margin: 0;
+    color: #00f;
 }
 #hdr_padd:hover #hdr_macro {
     display: grid;
@@ -211,6 +214,11 @@ button:active {
 }
 .homeact button {
     margin-bottom: 0 !important;
+}
+#toptoggle {
+    position: absolute;
+    top: 11px;
+    right: 13px;
 }
 #state {
     text-align: center;
