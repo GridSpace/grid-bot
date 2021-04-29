@@ -39,11 +39,11 @@ const MKEYS = {
 
 let istouch = true || 'ontouchstart' in document.documentElement || window.innerWidth === 800;
 let interval = null;
-let timeout = null;
 let queue = [];
 let logmsg = [];
 let files = {};
 let file_selected = null;
+let success = false;
 let ready = false;
 let sock = null;
 let last_jog = null;
@@ -58,8 +58,10 @@ let persist = localStorage;
 let selected = null;
 let mode = null;        // for checking against current status
 let grbl = false;
+let vids_err = 0;
 let run_verb = 'print';
 let job_verb = 'print';
+let serial = navigator ? navigator.serial : undefined;
 
 function $(id) {
     return document.getElementById(id);
@@ -471,10 +473,12 @@ function extrude(v) {
 function topbar(b) {
     if (b) {
         persist.topbar = true;
+        $('hdr_padd').style.display = 'flex';
         $('menu').classList.add('mtop');
         $('pages').classList.add('mtop');
     } else {
         persist.topbar = false;
+        $('hdr_padd').style.display = 'none';
         $('menu').classList.remove('mtop');
         $('pages').classList.remove('mtop');
     }
@@ -647,8 +651,15 @@ function vids_update() {
             img.style.width = "100%";
             img.style.height = `${100 * rat}%`;
         }
+        vids_err = 0;
     };
-    img.onerror = vids_update;
+    img.onerror = setTimeout(() => {
+        if (vids_err++ < 3) {
+            vids_update();
+        } else {
+            vids_err = 0;
+        }
+    }, 1000);
     img.src = url;
 }
 
@@ -1041,6 +1052,117 @@ function commlog(msg) {
     $('comm-log').scrollTop = $('comm-log').scrollHeight;
 }
 
+async function getPorts() {
+    return await serial.getPorts();
+}
+
+function renderPorts(ports) {
+    let html = [ '<option value="add">add port...</option>' ];
+    for (let i=0; i<ports.length; i++) {
+        html.push(`<option value="${i}">Port ${i+1}</option>`);
+    }
+    $('serial-port').innerHTML = html.join('');
+}
+
+function getSelectedPort() {
+    let list = $('serial-port');
+    return list.options[list.selectedIndex].value;
+}
+
+function getSelectedBaud() {
+    let baud = $('serial-baud');
+    return baud.options[baud.selectedIndex].value;
+}
+
+function init_port() {
+    let local_ports = [];
+    getPorts()
+        .then(ports => {
+            local_ports = ports;
+            let selport = getSelectedPort();
+            if (selport === 'add') {
+                return serial.requestPort();
+            } else {
+                return local_ports[parseInt(selport)];
+            }
+        })
+        .then(port => {
+            let io = local_ports.indexOf(port);
+            if (io >= 0) {
+                $('serial-port').selectedIndex = io;
+            }
+            console.log({port, io});
+            send(`*port ${io} ${getSelectedBaud()}`);
+            // send('*status;*list;*config');
+        })
+        .catch(err => {
+            console.log({err});
+        });
+}
+
+function init_work() {
+    set_mode('fdm');
+    set_progress(0);
+    $('menu-vids').style.display = 'none';
+    sock = new Worker("serial.js");
+    sock.onmessage = (data) => {
+        console.log("worker said", data);
+        ready = true;
+    };
+    sock.send = (data) => {
+        sock.postMessage(data);
+    };
+    getPorts().then(renderPorts);
+}
+
+function init_sock() {
+    let timeout = null;
+    sock = new WebSocket(`ws://${document.location.hostname}:4080`);
+    sock.onopen = (evt) => {
+        if (ready) {
+            return;
+        }
+        // log({wss_open: true});
+        ready = true;
+        success = true;
+        while (queue.length) {
+            send(queue.shift());
+        }
+        interval = setInterval(() => {
+            send('*status');
+        }, 1000);
+        send('*status;*list;*config');
+    };
+    sock.onclose = (evt) => {
+        if (!success) {
+            return;
+        }
+        log({wss_close: true});
+        clearInterval(interval);
+        if (timeout != null) {
+            return;
+        }
+        sock = null;
+        ready = false;
+        timeout = setTimeout(init, 1000);
+        $('state').value = 'server disconnected';
+    };
+    sock.onerror = (evt) => {
+        // if no server-side success, fall back to worker
+        if (!success && serial) {
+            return init_work();
+        }
+        log({wss_error: true});
+        if (timeout != null) {
+            return;
+        }
+        sock = null;
+        ready = false;
+        timeout = setTimeout(init, 1000);
+        $('state').value = 'no server connection';
+    };
+}
+
 function init() {
     // bind left menu items and select default
     menu = {
@@ -1061,43 +1183,8 @@ function init() {
     }
     menu_select(persist.page || 'home');
 
-    timeout = null;
-    sock = new WebSocket(`ws://${document.location.hostname}:4080`);
-    sock.onopen = (evt) => {
-        if (ready) {
-            return;
-        }
-        // log({wss_open: true});
-        ready = true;
-        while (queue.length) {
-            send(queue.shift());
-        }
-        interval = setInterval(() => {
-            send('*status');
-        }, 1000);
-        send('*status;*list;*config');
-    };
-    sock.onclose = (evt) => {
-        log({wss_close: true});
-        clearInterval(interval);
-        if (timeout != null) {
-            return;
-        }
-        sock = null;
-        ready = false;
-        timeout = setTimeout(init, 1000);
-        $('state').value = 'server disconnected';
-    };
-    sock.onerror = (evt) => {
-        log({wss_error: true});
-        if (timeout != null) {
-            return;
-        }
-        sock = null;
-        ready = false;
-        timeout = setTimeout(init, 1000);
-        $('state').value = 'no server connection';
-    };
+    init_sock();
+
     sock.onmessage = (evt) => {
         let msg = unescape(evt.data);
         let spos = msg.indexOf("*** ");

@@ -325,6 +325,18 @@
                 </div>
 
                 <div id="page-macr" class="col">
+                    <div id="serial">
+                        serial ports
+                        <select id="serial-port">
+                            <option value="add">add port...</option>
+                        </select>
+                        baud
+                        <select id="serial-baud">
+                            <option>115200</option>
+                            <option>250000</option>
+                        </select>
+                        <button onclick="init_port()">connect</button>
+                    </div>
                     <div id="macros"></div>
                 </div>
 
