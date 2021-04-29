@@ -1,5 +1,6 @@
 // serial port worker
 let serial = self.navigator ? self.navigator.serial : undefined;
+let port;
 
 if (!serial) {
     console.log('no serial support');
@@ -23,8 +24,18 @@ function getPorts() {
         });
 }
 
-function openPort(portnum, baud) {
-    console.log({open:portnum, baud});
+function openPort(portnum, baudRate) {
+    serial.getPorts()
+        .then(ports => {
+            port = ports[portnum];
+            return port.open({ baudRate });
+        })
+        .then(abc => {
+            send(`*open ${portnum}`);
+        })
+        .catch(err => {
+            console.log({err});
+        });
 }
 
 function send(msg) {

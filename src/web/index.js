@@ -1056,10 +1056,10 @@ async function getPorts() {
     return await serial.getPorts();
 }
 
-function renderPorts(ports) {
+function renderPorts(ports, selected) {
     let html = [ '<option value="add">add port...</option>' ];
     for (let i=0; i<ports.length; i++) {
-        html.push(`<option value="${i}">Port ${i+1}</option>`);
+        html.push(`<option value="${i}" ${i === selected ? ' selected' : ''}>Port ${i+1}</option>`);
     }
     $('serial-port').innerHTML = html.join('');
 }
@@ -1075,38 +1075,47 @@ function getSelectedBaud() {
 }
 
 function init_port() {
-    let local_ports = [];
-    getPorts()
-        .then(ports => {
-            local_ports = ports;
-            let selport = getSelectedPort();
-            if (selport === 'add') {
-                return serial.requestPort();
-            } else {
-                return local_ports[parseInt(selport)];
-            }
-        })
-        .then(port => {
-            let io = local_ports.indexOf(port);
-            if (io >= 0) {
-                $('serial-port').selectedIndex = io;
-            }
-            console.log({port, io});
-            send(`*port ${io} ${getSelectedBaud()}`);
-            // send('*status;*list;*config');
+    init_port_async()
+        .then(() => {
+            // console.log('init port');
         })
         .catch(err => {
             console.log({err});
         });
 }
 
+async function init_port_async() {
+    let portnum = getSelectedPort();
+    let ports, port;
+
+    if (portnum === 'add') {
+        port = await serial.requestPort();
+        if (port) {
+            ports = await getPorts();
+            portnum = ports.indexOf(port);
+            renderPorts(ports, portnum);
+        }
+    } else {
+        portnum = parseInt(portnum);
+        if (portnum >= 0) {
+            ports = await getPorts();
+            port = ports[portnum];
+        }
+    }
+
+    if (port && ports && portnum >= 0) {
+        send(`*port ${portnum} ${getSelectedBaud()}`);
+    }
+}
+
 function init_work() {
     set_mode('fdm');
     set_progress(0);
+    menu_select('macr');
     $('menu-vids').style.display = 'none';
     sock = new Worker("serial.js");
-    sock.onmessage = (data) => {
-        console.log("worker said", data);
+    sock.onmessage = (msg) => {
+        console.log("worker said", msg.data);
         ready = true;
     };
     sock.send = (data) => {
@@ -1427,7 +1436,7 @@ function init() {
     // restore settings
     set_jog(parseFloat(persist.jog_val) || 1, $(persist.jog_sel || "j100"));
     set_jog_speed(parseFloat(persist.jog_speed) || 100, $(persist.jog_speed_sel || "js0100"));
-    topbar(persist.topbar != 'false');
+    topbar(persist.topbar === 'true');
     $('toptoggle').onclick = () => {
         topbar(!eval(persist.topbar));
     };
