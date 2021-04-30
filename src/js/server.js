@@ -77,7 +77,6 @@ let grid = opt.grid || "https://live.grid.space";
 let mode = opt.mode || "fdm";
 let grbl = opt.grbl ? true : false;
 let ctrlport = opt.listen;
-let gridlast = '*';
 let extra = opt.extra;
 let errend = opt.errend || false;
 let checksum = opt.checksum;    // use line numbers and checksums
