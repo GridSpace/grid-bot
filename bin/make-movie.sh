@@ -15,4 +15,4 @@ while [ $x -lt $layers ]; do
 	x=$((x+1))
 done
 
-ffmpeg -r 60 -i image-%04d.jpg movie.mp4
+ffmpeg -r 60 -i image-%04d.jpg -s 800x600 movie.mp4
