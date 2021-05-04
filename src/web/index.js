@@ -62,6 +62,7 @@ let vids_err = 0;
 let run_verb = 'print';
 let job_verb = 'print';
 let serial = navigator ? navigator.serial : undefined;
+let temphist = JSON.parse(persist.temphist || '[]');
 
 function $(id) {
     return document.getElementById(id);
@@ -736,6 +737,27 @@ function set_config() {
     send(`*set-config ${encodeURIComponent(JSON.stringify(last_cfg))}`);
 }
 
+function render_temps() {
+    let max_noz = 0;
+    let max_bed = 0;
+    for (let point of temphist) {
+        let { temp } = point;
+        max_noz = Math.max(max_noz, temp.ext[0] || 0);
+        max_bed = Math.max(max_bed, temp.bed || 0);
+    }
+    let html = [];
+    for (let point of temphist) {
+        let { temp } = point;
+        let bed = temp.bed || 0;
+        let noz = temp.ext[0] || 0;
+        let pct_bed = max_bed > 0 ? (bed/maxbed)*100 : 5;
+        let pct_noz = max_noz > 0 ? (noz/maxnoz)*100 : 10;
+        html.push(`<div class="point bed" style="height:${pct_bed}%;width:1px"></div>`)
+        html.push(`<div class="point noz" style="height:${pct_noz}%;width:1px"></div>`)
+    }
+    $('temps').innerHTML = html.join('');
+}
+
 function config_update(config) {
     console.log({config});
     // update macros list
@@ -805,6 +827,20 @@ function status_update(status) {
             duration = (status.print.mark || Date.now()) - status.print.start;
         }
         $('elapsed').value = elapsed(duration);
+    }
+    if (status.temp && status.now) {
+        let last = 0;
+        if (temphist.length) {
+            last = temphist[temphist.length-1].time || 0;
+        }
+        if (status.now - last > 5000) {
+            temphist.push({time: status.now, temp: status.temp});
+            while (temphist.length > 240) {
+                temphist.shift();
+            }
+            persist.temphist = JSON.stringify(temphist);
+            render_temps();
+        }
     }
     if (status.temp && status.temp.ext) {
         if (status.temp.ext.length < 2) {
@@ -966,6 +1002,8 @@ function set_mode(mode) {
 }
 
 function set_mode_cnc() {
+    $('temps').style.display = 'none';
+    $('spacer').style.display = 'flex';
     // home
     $('heating').style.display = 'none';
     $('feedrate').style.display = '';
@@ -991,6 +1029,8 @@ function set_mode_cnc() {
 }
 
 function set_mode_fdm() {
+    $('temps').style.display = 'flex';
+    $('spacer').style.display = 'none';
     // home
     $('heating').style.display = '';
     $('feedrate').style.display = 'none';
@@ -1440,4 +1480,5 @@ function init() {
     $('toptoggle').onclick = () => {
         topbar(!eval(persist.topbar));
     };
+    render_temps();
 }

@@ -248,6 +248,20 @@ button:active {
 #page-move td {
     text-align: center;
 }
+#temps {
+    background-color: #f8f8f8;
+    border: 1px solid #bbb;
+    margin: 10px 0 5px 0;
+    border-radius: 5px;
+    padding: 5px;
+    align-items: flex-end;
+}
+#temps .bed {
+    border-top: 2px solid red;
+}
+#temps .noz {
+    border-top: 2px solid blue;
+}
 .xyz > div {
     margin: 4px;
 }
