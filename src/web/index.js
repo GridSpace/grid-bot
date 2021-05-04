@@ -751,8 +751,8 @@ function render_temps() {
         let noz = temp.ext[0] || 0;
         let pct_bed = max > 0 ? (bed/max)*100 : 5;
         let pct_noz = max > 0 ? (noz/max)*100 : 10;
-        html.push(`<div class="point bed" style="height:${pct_bed}%;width:1px"></div>`)
-        html.push(`<div class="point noz" style="height:${pct_noz}%;width:1px"></div>`)
+        html.push(`<div class="point bed" style="height:${pct_bed}%"></div>`)
+        html.push(`<div class="point noz" style="height:${pct_noz}%"></div>`)
     }
     $('temps').innerHTML = html.join('');
 }
@@ -834,7 +834,7 @@ function status_update(status) {
         }
         if (status.now - last > 5000) {
             temphist.push({time: status.now, temp: status.temp});
-            while (temphist.length > 240) {
+            while (temphist.length > 360) {
                 temphist.shift();
             }
             persist.temphist = JSON.stringify(temphist);

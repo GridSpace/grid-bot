@@ -258,9 +258,11 @@ button:active {
 }
 #temps .bed {
     border-top: 2px solid red;
+    width: 1px;
 }
 #temps .noz {
     border-top: 2px solid blue;
+    width: 1px;
 }
 .xyz > div {
     margin: 4px;
