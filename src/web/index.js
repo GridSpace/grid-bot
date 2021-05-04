@@ -474,11 +474,13 @@ function topbar(b) {
     if (b) {
         persist.topbar = true;
         $('hdr_padd').style.display = 'flex';
+        $('hdr_devc').style.display = 'flex';
         $('menu').classList.add('mtop');
         $('pages').classList.add('mtop');
     } else {
         persist.topbar = false;
         $('hdr_padd').style.display = 'none';
+        $('hdr_devc').style.display = 'none';
         $('menu').classList.remove('mtop');
         $('pages').classList.remove('mtop');
     }
