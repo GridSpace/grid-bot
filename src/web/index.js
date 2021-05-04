@@ -653,13 +653,11 @@ function vids_update() {
         }
         vids_err = 0;
     };
-    img.onerror = setTimeout(() => {
-        if (vids_err++ < 3) {
-            vids_update();
-        } else {
-            vids_err = 0;
+    img.onerror = () => {
+        if (vids_err++ < 4) {
+            setTimeout(vids_update, 500);
         }
-    }, 1000);
+    };
     img.src = url;
 }
 
