@@ -738,20 +738,19 @@ function set_config() {
 }
 
 function render_temps() {
-    let max_noz = 0;
-    let max_bed = 0;
+    let max = 0;
     for (let point of temphist) {
         let { temp } = point;
-        max_noz = Math.max(max_noz, temp.ext[0] || 0);
-        max_bed = Math.max(max_bed, temp.bed || 0);
+        max = Math.max(max, temp.ext[0] || 0);
+        max = Math.max(max, temp.bed || 0);
     }
     let html = [];
     for (let point of temphist) {
         let { temp } = point;
         let bed = temp.bed || 0;
         let noz = temp.ext[0] || 0;
-        let pct_bed = max_bed > 0 ? (bed/maxbed)*100 : 5;
-        let pct_noz = max_noz > 0 ? (noz/maxnoz)*100 : 10;
+        let pct_bed = max > 0 ? (bed/max)*100 : 5;
+        let pct_noz = max > 0 ? (noz/max)*100 : 10;
         html.push(`<div class="point bed" style="height:${pct_bed}%;width:1px"></div>`)
         html.push(`<div class="point noz" style="height:${pct_noz}%;width:1px"></div>`)
     }
