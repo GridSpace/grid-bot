@@ -750,7 +750,7 @@ function render_temps() {
         let bed = temp.bed || 0;
         let noz = temp.ext[0] || 0;
         let pct_bed = max > 0 ? (bed/max)*100 : 5;
-        let pct_noz = max > 0 ? (noz/max)*100 : 10;
+        let pct_noz = max > 0 ? (noz/max)*100 : 50;
         html.push(`<div class="point bed" style="height:${pct_bed}%"></div>`)
         html.push(`<div class="point noz" style="height:${pct_noz}%"></div>`)
     }
