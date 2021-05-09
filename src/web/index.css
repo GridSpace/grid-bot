@@ -257,10 +257,12 @@ button:active {
     align-items: flex-end;
 }
 #temps .bed {
+    background: linear-gradient(red, white, transparent);
     border-top: 2px solid red;
     width: 1px;
 }
 #temps .noz {
+    background: linear-gradient(blue, white, transparent);
     border-top: 2px solid blue;
     width: 1px;
 }
