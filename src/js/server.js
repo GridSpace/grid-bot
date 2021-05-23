@@ -643,7 +643,7 @@ function on_serial_line(line) {
     let isOK = line.indexOf("ok") === 0;
 
     // parse M105/M155 temperature updates
-    let tpos = line.indexOf("T:");
+    let tpos = Math.max(line.indexOf("T:"), line.indexOf("T0:"));
     if (tpos >= 0 && tpos < 6) {
         let tempfix = line.indexOf('TT:') >= 0;
         line = line

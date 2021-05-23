@@ -40,10 +40,12 @@ let debug = false;
 function looper(type, url, status, update) {
     let timer = Date.now();
     let killer = null;
+    let sclean = JSON.parse(JSON.stringify(status));
+    sclean.buffer.collect = undefined;
 
     const opts = [
         `uuid=${encodeURIComponent(status.device.uuid)}`,
-        `stat=${encodeURIComponent(JSON.stringify(status))}`,
+        `stat=${encodeURIComponent(JSON.stringify(sclean))}`,
         `last=${gridlast}`,
         `time=${timer.toString(36)}`,
         `type=${type}`
