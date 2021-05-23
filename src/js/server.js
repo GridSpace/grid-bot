@@ -293,7 +293,7 @@ function load_config() {
         }
 
         let opt = config;
-        let on = config.on;
+        let on = config.on || {};
 
         mode = status.device.mode = opt.mode = (opt.mode || mode);
         grbl = status.device.grbl = opt.grbl = (opt.grbl || grbl);
@@ -304,8 +304,8 @@ function load_config() {
         if (Array.isArray(on.pause)) onpause = on.pause;
         if (Array.isArray(on.resume)) onresume = on.resume;
 
-        onboot = on.boot = (onboot || mode === 'fdm' ? onboot_fdm : onboot_cnc);
-        onabort = on.abort = (onabort || mode === 'fdm' ? onabort_fdm : onabort_cnc);
+        onboot = on.boot = (onboot || (mode === 'fdm' ? onboot_fdm : onboot_cnc));
+        onabort = on.abort = (onabort || (mode === 'fdm' ? onabort_fdm : onabort_cnc));
 
         filedir = opt.filedir = (opt.filedir || filedir);
         grid = opt.grid = (opt.grid || grid);

@@ -49,6 +49,11 @@ function looper(type, url, status, update) {
         `type=${type}`
     ].join('&');
 
+    if (opts.length > 4096) {
+        console.log({invalid_opts: opts, exiting: true});
+        stopped = true;
+    }
+
     const retry = function(time, bool) {
         debug = bool;
         if (killer) {
