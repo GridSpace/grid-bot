@@ -1347,7 +1347,7 @@ function job_cancel() {
     }
     evtlog("job cancelled");
     status.print.cancel = cancel = true;
-    buf = [];
+    buf = onabort.slice();
 }
 
 function job_abort() {
@@ -1358,7 +1358,7 @@ function job_abort() {
     sport.write('\nM999\n');
     sport.write('\nM410\n');
     buf = [];
-    onboot = onabort;
+    onboot = onabort.slice();
     status.print.pause = false;
     status.print.abort = true;
     // forces re-init of marlin and onboot script to run
