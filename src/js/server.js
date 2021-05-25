@@ -40,22 +40,6 @@ const STATES = {
     FLASHING: "flashing"
 };
 
-const MCODE = {
-    M92:  "steps_per",
-    M201: "accel_max",
-    M203: "feedrate_max",
-    M204: "accel",
-    M205: "advanced",
-    M206: "home_offset",
-    M301: "pid_tuning",
-    M420: "UBL",
-    M851: "z_probe_offset",
-    M900: "linear_advance",
-    M906: "stepper_current",
-    M913: "hybrid_threshold",
-    M914: "stallguard"
-};
-
 let MACROS = {
     "eeprom save":      "M500",
     "eeprom load":      "M501; M503",
@@ -120,15 +104,16 @@ let buf_free = Infinity;        // remaing buffer slots
 let buf_maxx = 0;               // max buf_free observed
 let pln_free = Infinity;        // remaining planner slots
 let pln_maxx = 0;               // max pln_free observed
+let last_temp = 0;              // last time temp was observed
+let last_posn = 0;              // last time position was observed
+let timr_temp;                  // temp check timer
 let config = {};                // loaded config files
 let onboot = [];                // commands to run on boot
 let onabort = [];               // commands to run on job abort
 let onboot_fdm = [
     "M29",              // close out any open SD writes
     "M110 N0",          // reset checksum line number
-    "M155 S2",          // report temp every 2 seconds
     "M115",             // get firmware capabilities
-    "M503",             // get eeprom settings
     "M211",             // get endstop boundaries
     "M119",             // get endstop status
     "M114"              // get position
@@ -142,7 +127,6 @@ let onabort_fdm = [
     "G21",              // metric units
     "G90",              // absolute moves
     "G92 X0 Y0 Z0 E0",  // zero out XYZE
-    "M155 S2",          // report temp every 2 seconds
     "M104 S0 T0",       // extruder 0 heat off
     "M140 S0 T0",       // bed heat off
     "M107",             // shut off cooling fan
@@ -324,17 +308,17 @@ function load_config() {
 }
 
 // write line to all connected clients
-function emit(line, flags) {
-    const stat = flags && flags.status;
-    const list = flags && flags.list;
+function emit(line, flags = {}) {
+    const stat = flags.status;
+    const list = flags.list;
     if (typeof(line) === 'object') {
         line = JSON.stringify(line);
     }
     clients.forEach(client => {
-        let error = flags && flags.error;
+        let error = flags.error;
         let cstat = (stat && client.request_status);
         let clist = (list && client.request_list) || (list && !flags.channel && !client.console);
-        let cmatch = flags && flags.channel === client;
+        let cmatch = flags.channel === client;
         if (error || cmatch || cstat || clist || (client.monitoring && !stat && !list)) {
             client.write(line + "\n");
             if (cstat) {
@@ -369,8 +353,11 @@ function lpad(val, len, ch) {
     return str;
 };
 
-function cmdlog(line, flags) {
-    if (!debug && flags && flags.print && !opt.verbose) {
+function cmdlog(line, flags = {}) {
+    if (!debug && flags.print && !opt.verbose) {
+        return;
+    }
+    if (!debug && flags.system) {
         return;
     }
     if (typeof(line) === 'object') {
@@ -427,12 +414,12 @@ function probe_serial(then) {
     });
 }
 
-function on_serial_port() {
+function on_connection() {
     if (updating || !port || sport) {
         if (!status.device.ready) {
             status.state = updating ? STATES.FLASHING : STATES.NODEVICE;
         }
-        setTimeout(on_serial_port, 2000);
+        setTimeout(on_connection, 2000);
         return;
     }
 
@@ -441,7 +428,6 @@ function on_serial_port() {
         console.log({host, port: parseInt(hport)});
         sport = require('net').connect({host, port: parseInt(hport)})
             .on('connect', s => {
-                console.log({s});
                 sport.emit("open");
                 new LineBuffer(sport, on_serial_line);
             });
@@ -480,7 +466,7 @@ function on_serial_port() {
         .on('error', function(error) {
             sport = null;
             console.log(error);
-            setTimeout(on_serial_port, 2000);
+            setTimeout(on_connection, 2000);
             status.device.connect = 0;
             status.device.ready = false;
         })
@@ -488,7 +474,7 @@ function on_serial_port() {
         .on('close', function() {
             sport = null;
             evtlog("close");
-            setTimeout(on_serial_port, 2000);
+            setTimeout(on_connection, 2000);
             status.device.close = Date.now();
             status.device.ready = false;
             status.state = STATES.NODEVICE;
@@ -660,6 +646,7 @@ function on_serial_line(line) {
     let tpos = Math.max(line.indexOf("T:"), line.indexOf("T0:"));
     let bpos = line.indexOf("B:");
     if ((tpos >= 0 && tpos < 6) || (bpos >= 0 && bpos <= 6)) {
+        last_temp = Date.now();
         let tempfix = line.indexOf('TT:') >= 0;
         line = line
             .replace('TT:','T:')
@@ -807,6 +794,7 @@ function on_serial_line(line) {
 
     // parse M114 x/y/z/e positions
     if (line.indexOf("X:") === 0) {
+        last_posn = Date.now();
         let pos = status.pos = { stack:[] };
         let done = false;
         line.split(' ').forEach(tok => {
@@ -1013,7 +1001,6 @@ function send_file(filename, tosd) {
             mkdir(status.print.outdir);
         }
         sdsend = true;
-        queue(`M155 S0`);
         let gcode = fs.readFileSync(filename).toString().split("\n");
         if (tosd || sdspool) {
             lineno = 1;
@@ -1033,7 +1020,6 @@ function send_file(filename, tosd) {
             });
             bed_dirty();
         }
-        queue(`M155 S2`);
     } catch (e) {
         evtlog("error sending file", {error: true});
         console.log(e);
@@ -1502,7 +1488,7 @@ function process_queue() {
 
 let inloop = [];
 
-function queue(line, flags) {
+function queue(line, flags = {}) {
     // handle M808 looping
     if (line.indexOf('M808') === 0) {
         let toks = line.split(' ');
@@ -1540,7 +1526,7 @@ function queue(line, flags) {
             returnHome = true;
         }
     }
-    let priority = flags && flags.priority;
+    let priority = flags.priority;
     line = line.trim();
     if (line.length === 0) {
         return;
@@ -1574,6 +1560,15 @@ function queue(line, flags) {
 
 function queue_priority(line, channel, checksum) {
     queue(line, {priority: true, channel, checksum});
+}
+
+function queue_has(match) {
+    for (let rec of buf) {
+        if (rec.line.indexOf(match) >= 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function tokenize_line(line) {
@@ -1892,6 +1887,20 @@ function find_net_address() {
     }
 }
 
+function idle_checks_timer() {
+    clearTimeout(timr_temp);
+    timr_temp = setTimeout(idle_checks_timer, 1000);
+    if (status.print.run || starting || !quiescence) {
+        return;
+    }
+    if (Date.now() - last_temp > 1000 && !queue_has("M105")) {
+        queue('M105', {system: true});
+    }
+    if (Date.now() - last_posn > 1000 && !queue_has("M114")) {
+        queue('M114', {system: true});
+    }
+}
+
 function check_camera() {
     status.device.camera = lastmod('/var/www/html/camera.jpg') ? true : false;
 }
@@ -2042,10 +2051,11 @@ function startup() {
     mkdir(filedir);
     get_set_uuid();
     is_bed_clear();
-    on_serial_port();
+    on_connection();
     check_file_dir();
     find_net_address();
     check_camera();
+    idle_checks_timer();
     if (opt.register !== false) {
         gridsend.start(`db-${vernum}`, grid, status, (file,  gcode) => {
             let fpath = path.join(filedir, file);

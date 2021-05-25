@@ -924,49 +924,6 @@ function status_update(status) {
         if (min.y === ' TRIGGERED') $('ypos').classList.add('bg_yellow');
         if (min.z === ' TRIGGERED') $('zpos').classList.add('bg_yellow');
     }
-    if (status.settings) {
-        let valuehash = '';
-        let html = ['<table>'];
-        let bind = [];
-        for (let key in status.settings) {
-            let map = status.settings[key];
-            let kval = MCODE[key];
-            let line = MLINE[key] || 6;
-            if (kval === IGNORE) continue;
-            let keys = (MKEYS[key] || Object.keys(map))
-                .slice().filter(k => map[k] !== undefined && map[k] !== null);
-            let remn = keys.length;
-            while (remn > 0) {
-                let count = line;
-                html.push(`<tr class="settings"><th><label>${kval || key}</label></th>`);
-                while (count-- > 0 && keys.length) {
-                    remn--;
-                    let k = keys.shift();
-                    let bk = `ep-${key}-${k}`;
-                    let bv = [key, k];
-                    html.push(`<th>${k}</th>`);
-                    html.push(`<td><input id="${bk}" size="7" value="${map[k]}"></input</td>`);
-                    valuehash += [k,map[k]].join('');
-                    bind.push({bk,bv});
-                }
-                html.push('</tr>');
-            }
-        }
-        html.push('</table>');
-        if (valuehash !== last_hash) {
-            $('settings').innerHTML = html.join('');
-            bind.forEach(el => {
-                let {bk, bv} = el;
-                let input = $(bk);
-                input.onkeyup = (ev) => {
-                    if (ev.keyCode === 13) {
-                        send_safe(`${bv[0]} ${bv[1]}${input.value.trim()}`);
-                    }
-                };
-            });
-        }
-        last_hash = valuehash;
-    }
     if (status.device) {
         let sd = status.device;
         if (sd.name) {
@@ -1150,7 +1107,7 @@ async function init_port_async() {
 function init_work() {
     set_mode('fdm');
     set_progress(0);
-    menu_select('macr');
+    menu_select('conf');
     $('menu-vids').style.display = 'none';
     sock = new Worker("serial.js");
     sock.onmessage = (msg) => {
@@ -1221,7 +1178,7 @@ function init() {
         comm: $('menu-comm'),
         vids: $('menu-vids'),
         ctrl: $('menu-ctrl'),
-        macr: $('menu-macr')
+        // conf: $('menu-conf')
     };
     for (name in menu) {
         let key = name.split('-')[0];

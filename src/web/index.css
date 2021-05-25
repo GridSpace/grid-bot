@@ -310,6 +310,9 @@ button:active {
 #page-file {
     min-height: 0;
 }
+#menu-conf {
+    display: none !important;
+}
 #menu-file svg {
     font-size: larger;
 }
