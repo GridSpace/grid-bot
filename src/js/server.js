@@ -435,7 +435,21 @@ function on_serial_port() {
         setTimeout(on_serial_port, 2000);
         return;
     }
-    sport = new SerialPort(port, { baudRate: baud })
+
+    if (port.indexOf(":") > 0) {
+        let [host, hport] = port.split(':');
+        console.log({host, port: parseInt(hport)});
+        sport = require('net').connect({host, port: parseInt(hport)})
+            .on('connect', s => {
+                console.log({s});
+                sport.emit("open");
+                new LineBuffer(sport, on_serial_line);
+            });
+    } else {
+        sport = new SerialPort(port, { baudRate: baud });
+    }
+
+    sport
         .on('open', function() {
             evtlog("open: " + port);
             new LineBuffer(sport, on_serial_line);
