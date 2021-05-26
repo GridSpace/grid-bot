@@ -972,8 +972,6 @@ function set_mode_cnc() {
     $('jog-fdm').style.display = 'none';
     $('jog-cnc').style.display = '';
     $('abl').style.display = 'none';
-    // mill ops
-    $('menu-mill').style.display = '';
     // files
     run_verb = 'run gcode';
     job_verb = 'milling';
@@ -999,8 +997,6 @@ function set_mode_fdm() {
     $('jog-fdm').style.display = '';
     $('jog-cnc').style.display = 'none';
     $('abl').style.display = '';
-    // mill ops
-    $('menu-mill').style.display = 'none';
     // files
     run_verb = 'print';
     job_verb = 'print';
@@ -1174,7 +1170,6 @@ function init() {
         home: $('menu-home'),
         move: $('menu-move'),
         file: $('menu-file'),
-        mill: $('menu-mill'),
         comm: $('menu-comm'),
         vids: $('menu-vids'),
         ctrl: $('menu-ctrl'),
@@ -1380,40 +1375,6 @@ function init() {
             setnozzle(42);
         }
         ev.stopPropagation();
-    };
-    // bind milling ops
-    let mill_selop = null;
-    let mill_sel = (el, op, target) => {
-        el.style.display = '';
-        op.classList.add('mill-op-select');
-        if (mill_selop && mill_selop.el !== el) {
-            mill_selop.el.style.display = 'none';
-            mill_selop.op.classList.remove('mill-op-select');
-        }
-        mill_selop = { el, op, target };
-    };
-    [...document.getElementsByClassName('mill-op')].forEach(op => {
-        let target = op.getAttribute('target');
-        let el = $(`mill-${target}`);
-        el.style.display = 'none';
-        if (!mill_selop) {
-            mill_sel(el, op, target);
-        }
-        op.onclick = (ev) => {
-            mill_sel(el, op, target);
-        };
-    });
-    let tool_diam = $('tool-diam');
-    let tool_metric = $('tool-metric');
-    let tool_imperial = $('tool-imperial');
-    tool_diam.value = persist.tool_diam || 0.25;
-    tool_metric.checked = persist.tool_metric === 'true';
-    tool_imperial.checked = !tool_metric.checked;
-    tool_metric.onclick = tool_imperial.onclick = () => {
-        persist.tool_metric = tool_metric.checked
-    };
-    tool_diam.onkeyup = (ev) => {
-        persist.tool_diam = tool_diam.value;
     };
     // reload page on status click
     $('page-home').onclick = ev => {
