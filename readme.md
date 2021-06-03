@@ -7,7 +7,7 @@ this is suitable for anything from a Pi Zero on up.
 1. clone this repo
 2. cd to repo directory
 3. `npm i`
-4. if you don't have `pm2 installed: `npm install -g pm2@latest`
+4. if you don't have pm2 installed: `npm install -g pm2@latest`
 5. create/edit `etc/server.json` inside the repo directory
 6. `pm2 start src/js/server.js --name gridbot`
 7. `pm2 log`
