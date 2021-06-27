@@ -235,7 +235,7 @@ function center_go() {
 
 function home_go() {
     if (mode === 'fdm') {
-        send_safe('G28;M18');
+        send_safe('G28');
     }
     if (mode === 'cnc') {
         origin_go();

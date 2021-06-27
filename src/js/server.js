@@ -132,7 +132,7 @@ let onabort_fdm = [
     "M107",             // shut off cooling fan
     "G91",              // set relative moves
     "G0 Z10 X0 Y0",     // drop bed 1cm
-    "G28 XY",           // home X & Y
+    "G28 X0 Y0",        // home X & Y
     "G90",              // restore absolute moves
     "M84"               // disable steppers
 ];
