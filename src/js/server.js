@@ -1553,7 +1553,7 @@ function queue(line, flags = {}) {
         status.buffer.max = maxout = Math.max(maxout, buf.length);
     }
     if (returnHome) {
-        queue('G0 X0.5 Y0.5 F9000', flags);
+        queue('G0 X0 Y0 F9000', flags);
         queue('G0 Z0 F200', flags);
     }
 };
