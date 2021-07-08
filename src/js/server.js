@@ -1792,8 +1792,8 @@ function runbox(filename, feed) {
             .forEach(line => {
                 let toks = tokenize_line(line);
                 if (toks[0] === 'G0' || toks[0] === 'G1') {
-                    let x = pos.x;
-                    let y = pos.y;
+                    let x = abs ? pos.x : 0;
+                    let y = abs ? pos.y : 0;
                     toks.forEach(tok => {
                         if (tok.charAt(0) === 'X') {
                             x = parseFloat(tok.substring(1));
