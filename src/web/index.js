@@ -385,6 +385,13 @@ function preheat() {
     send('M105');
 }
 
+function cooldown() {
+    if (alert_on_run()) return;
+    send(`M104 S0 T0`);
+    send(`M140 S0`);
+    send('M105');
+}
+
 function nozzle_temp() {
     return parseInt($('nozzle_temp').value || '0');
 }
