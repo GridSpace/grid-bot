@@ -203,7 +203,7 @@ button:active {
     margin-right: 0 !important;
     text-align: center;
 }
-#preheat button {
+#preheat button, #cooldown button {
     width: 180px;
 }
 #page-home button {
