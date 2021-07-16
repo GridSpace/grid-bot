@@ -1519,13 +1519,13 @@ function queue(line, flags = {}) {
         return;
     }
     // special goto 0,0 after G28 because safe probe offset
-    let returnHome = false;
-    if (line.indexOf('G28') >= 0) {
-        let tmp = line.split(';')[0].trim();
-        if (tmp === 'G28') {
-            returnHome = true;
-        }
-    }
+    // let returnHome = false;
+    // if (line.indexOf('G28') >= 0) {
+    //     let tmp = line.split(';')[0].trim();
+    //     if (tmp === 'G28') {
+    //         returnHome = true;
+    //     }
+    // }
     let priority = flags.priority;
     line = line.trim();
     if (line.length === 0) {
@@ -1552,10 +1552,10 @@ function queue(line, flags = {}) {
         status.buffer.queue = buf.length;
         status.buffer.max = maxout = Math.max(maxout, buf.length);
     }
-    if (returnHome) {
-        queue('G0 X0 Y0 F9000', flags);
-        queue('G0 Z0 F200', flags);
-    }
+    // if (returnHome) {
+    //     queue('G0 X0 Y0 F9000', flags);
+    //     queue('G0 Z0 F200', flags);
+    // }
 };
 
 function queue_priority(line, channel, checksum) {
