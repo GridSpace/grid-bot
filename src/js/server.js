@@ -85,6 +85,7 @@ let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
 let filament = true;            // filament present status
+let matchall = false;           // try to match all commands with OK response
 let dircache = [];              // cache of files in watched directory
 let clients = [];               // connected clients
 let buf = [];                   // output line buffer
@@ -1106,6 +1107,7 @@ function process_input_two(line, channel) {
             if (toks[1] === "cnc") status.device.mode = 'cnc';
             return;
         case "*match":
+            matchall = (toks[1] === 'all');
             return console.log({match});
         case "*pause":
             return job_pause(toks[1]);
@@ -1698,6 +1700,17 @@ function write(line, flags) {
             }
             waiting++;
             status.buffer.waiting = waiting;
+            break;
+        default:
+            if (matchall) {
+                match.push({line, flags});
+                histo.push({line, flags});
+                while (histo.length > 20) {
+                    histo.shift();
+                }
+                waiting++;
+                status.buffer.waiting = waiting;
+            }
             break;
     }
     if (sport) {
