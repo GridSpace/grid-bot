@@ -1566,7 +1566,7 @@ function queue_priority(line, channel, checksum) {
 
 function queue_has(match) {
     for (let rec of buf) {
-        if (rec.line.indexOf(match) >= 0) {
+        if (rec.line && rec.line.indexOf(match) >= 0) {
             return true;
         }
     }
