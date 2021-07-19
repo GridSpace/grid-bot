@@ -303,6 +303,7 @@ function load_config() {
         debug = opt.debug = (opt.debug || debug || false);
         checksum = opt.checksum = (opt.checksum || checksum || false);
         errend = opt.errend = (opt.errend || errend || false);
+        matchall = opt.matchall = (opt.match || false);
     } catch (e) {
         console.log({error_reading_config: e});
     }
