@@ -908,6 +908,17 @@ function on_serial_line(line) {
         status.pos.Z = gopt.pos[2] - gopt.wco[2];
     }
 
+    // catch klipper pause/resume/cancel
+    if (line.indexOf("action:paused") >= 0) {
+        job_pause();
+    }
+    if (line.indexOf("action:resume") >= 0) {
+        job_resume();
+    }
+    if (line.indexOf("action:cancel") >= 0) {
+        job_cancel();
+    }
+
     // catch processing errors and reboot
     if (opt.fragile && line.indexOf("Unknown command:") >= 0) {
         evtlog(`fatal: ${line}`, {error: true});
@@ -1608,7 +1619,7 @@ function tokenize_line(line) {
 
 function write(line, flags) {
     if (!line) {
-        console.trace("missing line", line, flags);
+        console.trace("missing line", flags);
         return;
     }
     let sci = line.indexOf(";");
