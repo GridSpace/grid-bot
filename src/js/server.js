@@ -1658,7 +1658,7 @@ function write(line, flags) {
             if (line.indexOf("snapshot") > 0) {
                 evtlog(`camera snapshot ${status.print.outseq} to ${status.print.outdir}`);
                 let seq = (status.print.outseq++).toString().padStart(4,'0');
-                fs.link(
+                fs.copyFile(
                     "/tmp/camera.jpg",
                     status.print.outdir + `/image-${seq}.jpg`,
                     err => {});
