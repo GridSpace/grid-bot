@@ -1058,13 +1058,13 @@ function process_input_two(line, channel) {
         status.device.name = line.split(' ').slice(1).join(' ');
         line = `*exec sudo bin/update-name.sh ${status.device.name}`;
     }
-    // rewrite *wifi to an *exec call
-    if (line.indexOf("*wifi ") === 0) {
-        line = `*exec sudo bin/update-wifi.sh ${arg}`;
-    }
     let toks = line.split(' ').map(v => v.trim()).filter(v => v);
     let cmd = toks[0];
     let arg = toks.slice(1).join(' ');
+    // rewrite *wifi to an *exec call
+    if (line.indexOf("*wifi ") === 0) {
+        line = `*exec sudo bin/update-wifi.sh ${arg.join(' ')}`;
+    }
     let file;
     let pretty = undefined;
     switch (cmd) {
@@ -1654,11 +1654,11 @@ function write(line, flags) {
     }
     switch (line.charAt(0)) {
         case ';':
-            // layer change. capture picture
-            if (line.indexOf(" layer ") > 0 && line.indexOf("@") > 0) {
+            // capture picture when instructed
+            if (line.indexOf("snapshot") > 0) {
                 let seq = (status.print.outseq++).toString().padStart(4,'0');
                 fs.link(
-                    "/var/www/html/camera.jpg",
+                    "/tmp/camera.jpg",
                     status.print.outdir + `/image-${seq}.jpg`,
                     err => {});
             }
