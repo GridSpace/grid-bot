@@ -1870,6 +1870,7 @@ function kick_next() {
 function headers(req, res, next) {
     res.setHeader("Access-Control-Allow-Origin", req.headers['origin'] || '*');
     res.setHeader("Access-Control-Allow-Credentials", true);
+    res.setHeader("Access-Control-Request-Private-Network", true);
     res.setHeader("Access-Control-Allow-Headers", "X-Moto-Ajax");
     next();
 }
