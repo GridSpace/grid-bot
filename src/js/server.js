@@ -1,4 +1,4 @@
-/** Copyright Stewart Allen <sa@grid.space> -- All Rights Reserved */
+/** Copyright Stewart Allen <sa@grid.space> */
 
 "use strict";
 
@@ -1481,8 +1481,10 @@ function process_queue() {
             let minutes = ((status.print.end - status.print.start) / 60000).toFixed(2);
             if (status.print.cancel) {
                 evtlog(`job cancelled ${status.print.filename} after ${minutes} min`);
+                status.print.cancel = false;
             } else if (status.print.abort) {
                 evtlog(`job aborted ${status.print.filename} after ${minutes} min`);
+                status.print.abort = false;
             } else {
                 status.print.progress = "100.00";
                 evtlog(`job done ${status.print.filename} in ${minutes} min`);
