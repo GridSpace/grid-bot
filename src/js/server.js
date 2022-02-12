@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const vernum = "021";
+const vernum = "022";
 const version = `Serial [${vernum}]`;
 const gridsend = require('./gridsend');
 const WebSocket = require('ws');
