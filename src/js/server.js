@@ -912,9 +912,9 @@ function on_serial_line(line) {
     if (line.indexOf("action:paused") >= 0) {
         job_pause();
     }
-    if (line.indexOf("action:resume") >= 0) {
-        job_resume();
-    }
+    // if (line.indexOf("action:resume") >= 0) {
+    //     job_resume();
+    // }
     if (line.indexOf("action:cancel") >= 0) {
         job_cancel();
     }

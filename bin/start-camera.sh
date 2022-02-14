@@ -5,7 +5,9 @@
 
 cd /home/pi/grid-bot >/dev/null 2>&1 || cd /home/pi
 
-which raspistill || exit
+export cmd=$(which raspistill || which libcamera-still)
+
+[ ! -z $cmd ] || exit
 
 while /bin/true; do
     [ -f etc/camera.conf ] && source etc/camera.conf
@@ -26,7 +28,7 @@ while /bin/true; do
            fi
        fi
     fi
-    [ ${RUN} -eq 1 ] && raspistill -n \
+    [ ${RUN} -eq 1 ] && ${cmd} -n \
         -w ${WIDTH:-1600} \
         -h ${HEIGHT:-1200} \
         -q ${QUALITY:-20} \
