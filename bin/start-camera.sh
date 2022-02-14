@@ -29,13 +29,13 @@ while /bin/true; do
        fi
     fi
     [ ${RUN} -eq 1 ] && ${cmd} -n \
-        -w ${WIDTH:-1600} \
-        -h ${HEIGHT:-1200} \
+        --width ${WIDTH:-1600} \
+        --height ${HEIGHT:-1200} \
         -q ${QUALITY:-20} \
         -o ${FILE_TEMP:-${TMPFILE}} \
-        -l ${FILE_PERM:-/var/www/html/camera.jpg} \
+        --latest ${FILE_PERM:-/var/www/html/camera.jpg} \
         -t ${TIMEOUT:-500} \
-        -ss ${EXPOSURE:-40000} \
-        -rot ${ROTATION:-90} \
+        --shutter ${EXPOSURE:-40000} \
+        --rotation ${ROTATION:-90} \
 		-awb ${BALANCE:-greyworld}
 done

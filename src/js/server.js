@@ -1931,7 +1931,7 @@ function idle_checks_timer() {
 }
 
 function check_camera() {
-    status.device.camera = lastmod('/var/www/html/camera.jpg') ? true : false;
+    status.device.camera = lastmod('/tmp/camera.jpg') ? true : false;
 }
 
 // look for existing uuid or generate a new one
