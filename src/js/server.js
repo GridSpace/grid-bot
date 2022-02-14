@@ -1058,13 +1058,13 @@ function process_input_two(line, channel) {
         status.device.name = line.split(' ').slice(1).join(' ');
         line = `*exec sudo bin/update-name.sh ${status.device.name}`;
     }
+    // rewrite *wifi to an *exec call
+    if (line.indexOf("*wifi ") === 0) {
+        line = `*exec sudo bin/update-wifi.sh ${line.substring(6)}`;
+    }
     let toks = line.split(' ').map(v => v.trim()).filter(v => v);
     let cmd = toks[0];
     let arg = toks.slice(1).join(' ');
-    // rewrite *wifi to an *exec call
-    if (line.indexOf("*wifi ") === 0) {
-        line = `*exec sudo bin/update-wifi.sh ${arg}`;
-    }
     let file;
     let pretty = undefined;
     switch (cmd) {
