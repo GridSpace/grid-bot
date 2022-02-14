@@ -1063,7 +1063,7 @@ function process_input_two(line, channel) {
     let arg = toks.slice(1).join(' ');
     // rewrite *wifi to an *exec call
     if (line.indexOf("*wifi ") === 0) {
-        line = `*exec sudo bin/update-wifi.sh ${arg.join(' ')}`;
+        line = `*exec sudo bin/update-wifi.sh ${arg}`;
     }
     let file;
     let pretty = undefined;
