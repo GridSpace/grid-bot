@@ -1,3 +1,5 @@
+/** Copyright Stewart Allen <sa@grid.space> */
+
 module.exports = { start, restart, stop, status };
 
 function start(type, url, status, update) {

@@ -1,4 +1,4 @@
-/** Copyright Stewart Allen <sa@grid.space> -- All Rights Reserved */
+/** Copyright Stewart Allen <sa@grid.space> */
 
 "use strict";
 
@@ -10,7 +10,7 @@
  * firmwares.
  */
 
-const vernum = "021";
+const vernum = "022";
 const version = `Serial [${vernum}]`;
 const gridsend = require('./gridsend');
 const WebSocket = require('ws');
@@ -1060,7 +1060,7 @@ function process_input_two(line, channel) {
     }
     // rewrite *wifi to an *exec call
     if (line.indexOf("*wifi ") === 0) {
-        line = `*exec sudo bin/update-wifi.sh ${arg}`;
+        line = `*exec sudo bin/update-wifi.sh ${line.substring(6)}`;
     }
     let toks = line.split(' ').map(v => v.trim()).filter(v => v);
     let cmd = toks[0];
@@ -1481,8 +1481,10 @@ function process_queue() {
             let minutes = ((status.print.end - status.print.start) / 60000).toFixed(2);
             if (status.print.cancel) {
                 evtlog(`job cancelled ${status.print.filename} after ${minutes} min`);
+                status.print.cancel = false;
             } else if (status.print.abort) {
                 evtlog(`job aborted ${status.print.filename} after ${minutes} min`);
+                status.print.abort = false;
             } else {
                 status.print.progress = "100.00";
                 evtlog(`job done ${status.print.filename} in ${minutes} min`);
@@ -1654,11 +1656,12 @@ function write(line, flags) {
     }
     switch (line.charAt(0)) {
         case ';':
-            // layer change. capture picture
-            if (line.indexOf(" layer ") > 0 && line.indexOf("@") > 0) {
+            // capture picture when instructed
+            if (line.indexOf("snapshot") > 0) {
+                evtlog(`camera snapshot ${status.print.outseq} to ${status.print.outdir}`);
                 let seq = (status.print.outseq++).toString().padStart(4,'0');
-                fs.link(
-                    "/var/www/html/camera.jpg",
+                fs.copyFile(
+                    "/tmp/camera.jpg",
                     status.print.outdir + `/image-${seq}.jpg`,
                     err => {});
             }
@@ -1869,6 +1872,7 @@ function kick_next() {
 function headers(req, res, next) {
     res.setHeader("Access-Control-Allow-Origin", req.headers['origin'] || '*');
     res.setHeader("Access-Control-Allow-Credentials", true);
+    res.setHeader("Access-Control-Request-Private-Network", true);
     res.setHeader("Access-Control-Allow-Headers", "X-Moto-Ajax");
     next();
 }
