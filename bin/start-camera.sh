@@ -37,5 +37,5 @@ while /bin/true; do
         -t ${TIMEOUT:-500} \
         --shutter ${EXPOSURE:-40000} \
         --rotation ${ROTATION:-90} \
-		-awb ${BALANCE:-greyworld}
+		--awb ${BALANCE:-greyworld}
 done
