@@ -15,6 +15,8 @@ while /bin/true; do
     export DATE=$(date '+%Y-%m-%d')
     export TIME=$(date '+%H:%M')
     export TMPFILE=/tmp/camera.jpg
+    export TEMP=${FILE_TEMP:-${TMPFILE}}
+    export PERM=${FILE_PERM:-/var/www/html/camera.jpg}
     if [ ! -z ${TIMELAPSE} ]; then
        mkdir -p "${TIMELAPSE}/${DATE}"
        export TMPFILE="${TIMELAPSE}/${DATE}/${TIME}.jpg"
@@ -28,14 +30,17 @@ while /bin/true; do
            fi
        fi
     fi
+    [ ! -z ${NOIR} ] && export TUNING="--tuning-file /usr/share/libcamera/ipa/raspberrypi/imx219_noir.json"
     [ ${RUN} -eq 1 ] && ${cmd} -n \
         --width ${WIDTH:-1600} \
         --height ${HEIGHT:-1200} \
         -q ${QUALITY:-20} \
-        -o ${FILE_TEMP:-${TMPFILE}} \
-        --latest ${FILE_PERM:-/var/www/html/camera.jpg} \
+        -o ${TEMP} ${TUNING:-""} \
         -t ${TIMEOUT:-500} \
         --shutter ${EXPOSURE:-40000} \
         --rotation ${ROTATION:-90} \
-		--awb ${BALANCE:-greyworld}
+		--awb ${BALANCE:-greyworld} 2>/dev/null
+    [ ! -z ${MOGRIFY} ] && \
+        mogrify -rotate ${MOGRIFY} ${TEMP}
+    cp ${TEMP} ${PERM}
 done
