@@ -647,7 +647,7 @@ function on_serial_line(line) {
     // parse M105/M155 temperature updates
     let tpos = Math.max(line.indexOf("T:"), line.indexOf("T0:"));
     let bpos = line.indexOf("B:");
-    if ((tpos >= 0 && tpos < 6) || (bpos >= 0 && bpos <= 6)) {
+    if (tpos >= 0 && bpos >= 0) {
         last_temp = Date.now();
         let tempfix = line.indexOf('TT:') >= 0;
         line = line
