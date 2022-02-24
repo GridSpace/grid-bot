@@ -35,11 +35,11 @@ while /bin/true; do
         --width ${WIDTH:-1600} \
         --height ${HEIGHT:-1200} \
         -q ${QUALITY:-20} \
-        -o ${TEMP} ${TUNING:-""} \
+        -o ${TEMP} ${TUNING:-} \
         -t ${TIMEOUT:-500} \
         --shutter ${EXPOSURE:-40000} \
         --rotation ${ROTATION:-90} \
-		--awb ${BALANCE:-greyworld} 2>/dev/null
+        --awb ${BALANCE:-greyworld} 2>/dev/null
     [ ! -z ${MOGRIFY} ] && \
         mogrify -rotate ${MOGRIFY} ${TEMP}
     cp ${TEMP} ${PERM}
