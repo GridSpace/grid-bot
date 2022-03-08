@@ -39,7 +39,7 @@ while /bin/true; do
         -t ${TIMEOUT:-500} \
         --shutter ${EXPOSURE:-40000} \
         --rotation ${ROTATION:-90} \
-        --awb ${BALANCE:-greyworld} 2>/dev/null
+        --awb ${BALANCE:-greyworld} 2>/dev/null || exit
     [ ! -z ${MOGRIFY} ] && \
         mogrify -rotate ${MOGRIFY} ${TEMP}
     cp ${TEMP} ${PERM}
