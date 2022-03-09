@@ -431,7 +431,7 @@ button:active {
     overflow-y: auto;
 }
 #macros button, #macros input {
-    padding: 4px;
+    padding: 6px;
     margin: 0;
 }
 .row {
