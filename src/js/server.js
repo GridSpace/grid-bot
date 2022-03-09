@@ -528,6 +528,18 @@ function on_quiescence() {
     onboot = [];
 }
 
+function isStreamPaused() {
+    return stream && stream.isPaused();
+}
+
+function pauseStream() {
+    if (stream) stream.pause();
+}
+
+function streamResume() {
+    if (stream) stream.resume();
+}
+
 function parseTemp(str, fix) {
     if (fix) {
         str = str.substring(str.length/2);
@@ -1039,8 +1051,8 @@ function send_file(filename, tosd) {
         stream.on('line', line => {
             let bytes = line.length + (slines.crlf ? 2 : 1);
             queue(line.toString(), { print, checksum, bytes });
-            if (buf.length > 500 && !stream.isPaused()) {
-                stream.pause();
+            if (buf.length > 500 && !isStreamPaused()) {
+                pauseStream();
             }
         });
         stream.on('close', () => {
@@ -1482,8 +1494,8 @@ function process_queue() {
         status.buffer.queue = buf.length;
         status.print.mark = Date.now();
         write(line,flags);
-        if (buf.length < 100 && stream.isPaused()) {
-            stream.resume();
+        if (buf.length < 100 && isStreamPaused()) {
+            streamResume();
         }
     }
     if (cancel || buf.length === 0) {
