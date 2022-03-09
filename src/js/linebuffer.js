@@ -11,6 +11,8 @@ class LineBuffer {
         this.buffer = null;
         this.stream = stream;
         this.online = online;
+        this.bytes = 0;
+        this.crlf = false;
         if (online) {
             stream.on("readable", () => {
                 let data;
@@ -26,6 +28,7 @@ class LineBuffer {
     }
 
     ondata(data) {
+        this.bytes += data.length;
         if (this.buffer) {
             this.buffer = Buffer.concat([this.buffer, data]);
         } else {
@@ -42,7 +45,12 @@ class LineBuffer {
         const data = this.buffer;
         const cr = data.indexOf("\r");
         const lf = data.indexOf("\n");
-        if (lf && cr + 1 == lf) { left = 1 }
+        if (lf && cr + 1 == lf) {
+            left = 1;
+            this.crlf = true;
+        } else {
+            this.crlf = false;
+        }
         if (lf >= 0) {
             let slice = data.slice(0, lf - left);
             if (this.online) {

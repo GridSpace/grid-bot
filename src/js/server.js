@@ -67,6 +67,10 @@ let checksum = opt.checksum;    // use line numbers and checksums
 let bufdefault = parseInt(opt.buflen || mode === 'cnc' ? 3 : 8);
 let bufmax = bufdefault;        // max unack'd output lines
 let port = oport;               // default port (possible to probe)
+let stream = undefined;         // current file input stream
+let slines = undefined;         // current file line emitter
+let sbytes = 0;                 // byte length of current read stream
+let swrote = 0;                 // stream bytes processed
 let lineno = 1;                 // next output line number
 let starting = false;           // output phase just after reset
 let quiescence = false;         // achieved quiescence after serial open
@@ -991,48 +995,76 @@ function send_file(filename, tosd) {
     if (fs.statSync(filename).size === 0) {
         return evtlog("invalid file: empty", {error: true});
     }
-    status.print.run = true;
-    status.print.abort = false;
-    status.print.pause = paused = false;
-    status.print.cancel = cancel = false;
-    status.print.filename = filename;
-    status.print.outdir = filename.substring(0, filename.lastIndexOf(".")) + ".output";
-    status.print.outseq = 0;
-    status.print.start = Date.now();
+    Object.assign(status.print, {
+        run: true,
+        abort: false,
+        pause: paused = false,
+        cancel: cancel = false,
+        outdir: filename.substring(0, filename.lastIndexOf(".")) + ".output",
+        filename: filename,
+        outseq: 0,
+        start: Date.now()
+    });
     status.state = mode === 'cnc' ? STATES.MILLING : STATES.PRINTING;
     evtlog(`job head ${filename}`);
     try {
         let stat = null;
+
         try {
             stat = fs.statSync(status.print.outdir);
         } catch (e) {
             // no such directory
         }
+
         if (stat && stat.isDirectory()) {
             clear_dir(status.print.outdir);
         } else {
             mkdir(status.print.outdir);
         }
         sdsend = true;
-        let gcode = fs.readFileSync(filename).toString().split("\n");
-        if (tosd || sdspool) {
+
+        try {
+            stat = fs.statSync(filename);
+            sbytes = stat.size;
+        } catch (e) {
+            // file does not exist
+        }
+
+        stream = fs.createReadStream(filename);
+        slines = new LineBuffer(stream);
+        swrote = 0;
+
+        let sdwrite = tosd || sdspool;
+        let checksum = true;
+        let print = true;
+        let lastbytes;
+
+        if (sdwrite) {
             lineno = 1;
+            print = false;
             evtlog(`spooling "${filename} to SD"`);
             queue(`M110 N0`);
             queue(`M28 print.gco`, { checksum: true });
             gcode.forEach(line => {
                 queue(line, { checksum: true });
             });
-            queue(`M29`);
-            // evtlog(`printing "${filename} from SD"`);
-            // queue(`M23 print.gco`);
-            // queue(`M24`);
         } else {
-            gcode.forEach(line => {
-                queue(line, {print: true, checksum: true});
-            });
             bed_dirty();
         }
+
+        stream.on('line', line => {
+            let bytes = line.length + (slines.crlf ? 2 : 1);
+            queue(line.toString(), { print, checksum, bytes });
+            if (buf.length > 500 && !stream.isPaused()) {
+                stream.pause();
+            }
+        });
+        stream.on('close', () => {
+            if (sdwrite) {
+                queue(`M29`);
+            }
+        });
+
     } catch (e) {
         evtlog("error sending file", {error: true});
         console.log(e);
@@ -1456,16 +1488,19 @@ function process_queue() {
     while (waiting < bufmax && buf.length && !paused && !cancel) {
         if (paused) {
             // peek to see if next queue entry runs while paused
-            let {line, flags} = buf[0];
+            let { line, flags } = buf[0];
             // exit while if next entry is not pause-runnable
             if (!flags || !flags.onpause) {
                 break;
             }
         }
-        let {line, flags} = buf.shift();
+        let { line, flags } = buf.shift();
         status.buffer.queue = buf.length;
         status.print.mark = Date.now();
         write(line,flags);
+        if (buf.length < 100 && stream.isPaused()) {
+            stream.resume();
+        }
     }
     if (cancel || buf.length === 0) {
         status.buffer.max = maxout = 0;
@@ -1496,7 +1531,7 @@ function process_queue() {
         }
     } else {
         if (status.print.run) {
-            status.print.progress = ((1.0 - (buf.length / maxout)) * 100.0).toFixed(2);
+            status.print.progress = ((swrote / sbytes) * 100.0).toFixed(2);
         }
     }
     processing = false;
@@ -1534,14 +1569,6 @@ function queue(line, flags = {}) {
         inloop[inloop.length-1].push({line, flags});
         return;
     }
-    // special goto 0,0 after G28 because safe probe offset
-    // let returnHome = false;
-    // if (line.indexOf('G28') >= 0) {
-    //     let tmp = line.split(';')[0].trim();
-    //     if (tmp === 'G28') {
-    //         returnHome = true;
-    //     }
-    // }
     let priority = flags.priority;
     line = line.trim();
     if (line.length === 0) {
@@ -1568,10 +1595,6 @@ function queue(line, flags = {}) {
         status.buffer.queue = buf.length;
         status.buffer.max = maxout = Math.max(maxout, buf.length);
     }
-    // if (returnHome) {
-    //     queue('G0 X0 Y0 F9000', flags);
-    //     queue('G0 Z0 F200', flags);
-    // }
 };
 
 function queue_priority(line, channel, checksum) {
@@ -1629,6 +1652,9 @@ function write(line, flags) {
         line = line.substring(0, sci).trim();
     }
     flags = flags || {};
+    if (flags && flags.bytes) {
+        swrote += flags.bytes;
+    }
     // handle push/pop
     if (line.charAt(0) === '*') {
         switch (line) {
@@ -1729,6 +1755,7 @@ function write(line, flags) {
             break;
     }
     if (sport) {
+        let llen = line.length;
         if (checksum || flags.checksum) {
             flags.lineno = lineno;
             status.device.lineno = lineno;
