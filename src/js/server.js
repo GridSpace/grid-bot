@@ -22,9 +22,7 @@ const opt = require('minimist')(process.argv.slice(2));
 const net = require('net');
 const fs = require('fs');
 const os = require('os');
-const url = require('url');
 const http = require('http');
-const https = require('https');
 const serve = require('serve-static');
 const moment = require('moment');
 const connect = require('connect');
@@ -88,7 +86,6 @@ let sdsend = false;             // true if saving to SD
 let cancel = false;             // job cancel requested
 let updating = false;           // true when updating firmware
 let sdspool = false;            // spool to sd for printing
-let filament = true;            // filament present status
 let matchall = false;           // try to match all commands with OK response
 let dircache = [];              // cache of files in watched directory
 let clients = [];               // connected clients
@@ -102,7 +99,6 @@ let debug = opt.debug;          // debug and dump all data
 let extrude = true;             // enable / disable extrusion
 let wait_quiesce = null;
 let wait_counter = 0;
-let wait_time = 10000;
 let printCache = {};            // cache of print
 let known = {};                 // known files
 let buf_free = Infinity;        // remaing buffer slots
@@ -558,6 +554,7 @@ function on_serial_line(line) {
         quiescence_waiter();
     }
 
+    // last received line date mark
     status.device.line = Date.now();
 
     if (line.length === 0) {
@@ -685,23 +682,21 @@ function on_serial_line(line) {
             }
         });
         if (!isOK) {
-            // kick_queue();
             return;
         }
     }
 
-    let matched = false;
     if (isOK) {
+        // match output to an initiating command (from a queue)
         acks++;
 
-        // match output to an initiating command (from a queue)
         // after "start" there is no collecting until first "ok"
         if (collect) {
             line = line.substring(3);
             collect.push(line);
         }
 
-        matched = match.shift() || {};
+        let matched = match.shift() || {};
         let from = matched ? matched.line : "???";
         let flags = matched ? matched.flags || {} : {};
 
@@ -732,19 +727,6 @@ function on_serial_line(line) {
             }
         });
 
-        // if checksumming is enabled, lines start with Nxxxx
-        // and must match the stored output record
-        // if (line.charAt(0) === 'N') {
-        //     let lno = parseInt(line.split(' ')[0].substring(1));
-        //     if (lno !== flags.lineno) {
-        //         if (flags.lineno) {
-        //             let delta = parseInt(flags.lineno) - parseInt(lno);
-        //             console.log(`expected: [${flags.lineno}] got: [${lno}] '${line}' delta: ${delta}`);
-        //         } else {
-        //             console.log(`unexpected: [${lno}] '${line}'`);
-        //         }
-        //     }
-        // }
         // callbacks used by M117 to track start of print
         if (matched && flags.callback) {
             flags.callback(collect, matched.line);
@@ -774,6 +756,7 @@ function on_serial_line(line) {
         status.update = false;
         collect = [];
     } else if (collect) {
+        // unmatched lines are collected are multi-line responses
         collect.push(line);
     }
 
@@ -785,6 +768,7 @@ function on_serial_line(line) {
 
     // status.buffer.match = match;
     status.buffer.collect = collect;
+
     // 8-bit marlin systems send "start" on a serial port open
     if (line === "start") {
         lineno = 1;
@@ -900,9 +884,9 @@ function on_serial_line(line) {
     }
 
     // parse GRBL position
-    if (line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
+    if (grbl && line.charAt(0) === '<' && line.charAt(line.length-1) === '>') {
         let gopt = status.grbl;
-        let grbl = line.substring(1,line.length-2).split('|').forEach(tok => {
+        line.substring(1,line.length-2).split('|').forEach(tok => {
             tok = tok.split(':');
             if (tok[0] === 'MPos') gopt.pos = tok[1].split(',').map(v => parseFloat(v));
             if (tok[0] === 'WCO') gopt.wco = tok[1].split(',').map(v => parseFloat(v));
@@ -923,7 +907,7 @@ function on_serial_line(line) {
         job_cancel();
     }
 
-    // catch processing errors and reboot
+    // catch processing errors and exit in debug mode
     if (opt.fragile && line.indexOf("Unknown command:") >= 0) {
         evtlog(`fatal: ${line}`, {error: true});
         sport.close();
@@ -1077,13 +1061,13 @@ function send_status(pretty) {
 
 function process_input(line, channel) {
     try {
-        process_input_two(line, channel);
-    } catch (e) {
-        console.trace(line, e);
+        _process_input(line, channel);
+    } catch (error) {
+        console.trace({line, channel, error});
     }
 }
 
-function process_input_two(line, channel) {
+function _process_input(line, channel) {
     line = line.toString().trim();
     // rewrite *name to an *exec call
     if (line.indexOf("*name ") === 0) {
@@ -2017,7 +2001,7 @@ function add_proc_ctrl() {
 
     if (opt.stdin) {
         new LineBuffer(process.stdin);
-        process.stdin.on("line", line => { process_input(line, clients[0]) });
+        process.stdin.on("line", line => process_input(line, clients[0]));
         status.clients.stdin = 1;
     }
 }
@@ -2029,7 +2013,7 @@ function start_ctrl_port(ctrlport) {
         status.clients.net++;
         socket.linebuf = new LineBuffer(socket);
         socket.write(`*ready ${dev.name} ${dev.version} ${dev.firm.auth} ${dev.addr.join(',')}\n`);
-        socket.on("line", line => { process_input(line, socket) });
+        socket.on("line", line => process_input(line, socket));
         socket.on("close", () => {
             clients.splice(clients.indexOf(socket),1);
             status.clients.net--;
