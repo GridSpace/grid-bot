@@ -375,7 +375,7 @@ button:active {
     position: relative;
     align-items: center;
 }
-#page-vids img {
+#page-vids img, #page-vids iframe {
     width: 100%;
     height: 100%;
     margin: 0;
