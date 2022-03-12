@@ -639,6 +639,17 @@ function init_filedrop() {
 }
 
 function vids_update() {
+    if (!last_set.device) {
+        setTimeout(vids_update, 1000);
+        return;
+    }
+    if (last_set.device.camera > 0) {
+        let proto = location.protocol;
+        let host = location.hostname;
+        let port = last_set.device.camera;
+        $('page-vids').innerHTML = `<frame src="${proto}//${host}:${port}"`;
+        return;
+    }
     let time = Date.now();
     let img = new Image();
     // let url = `http://10.10.10.111/camera.jpg?time=${time}`;
@@ -698,6 +709,8 @@ function menu_select(key) {
 
     if (key === 'vids') {
         vids_update();
+    } else if (last_set.device && last_set.device.camera > 0) {
+        $('page-vids').innerHTML = '';
     }
     if (key === 'comm') {
         $('command').focus();
@@ -943,7 +956,9 @@ function status_update(status) {
         if (sd.mode !== mode) {
             set_mode(mode = sd.mode);
         }
-        if (sd.camera === true) {
+        if (sd.camera > 0) {
+            // console.log('camera on port', sd.camera);
+        } else if (sd.camera === true) {
             $('menu-vids').style.display = 'flex';
         } else {
             $('menu-vids').style.display = 'none';

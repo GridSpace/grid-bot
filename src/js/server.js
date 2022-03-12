@@ -1954,7 +1954,11 @@ function idle_checks_timer() {
 }
 
 function check_camera() {
-    status.device.camera = lastmod('/tmp/camera.jpg') ? true : false;
+    if (lastmod('/tmp/motion.port')) {
+        status.device.camera = parseInt(fs.readFileSync('/tmp/motion.port').toString());
+    } else {
+        status.device.camera = lastmod('/tmp/camera.jpg') ? true : false;
+    }
 }
 
 // look for existing uuid or generate a new one

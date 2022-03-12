@@ -5,6 +5,14 @@
 
 cd /home/pi/grid-bot >/dev/null 2>&1 || cd /home/pi
 
+# if motion enabled. use that port instead of stills
+[ -f etc/camera.conf ] && source etc/camera.conf
+if [ ! -z ${MOTION} ]; then
+    motion -b -m
+    echo ${MOTION} > /tmp/motion.port
+    exit
+fi
+
 export cmd=$(which raspistill || which libcamera-still)
 
 [ ! -z $cmd ] || exit
