@@ -647,7 +647,8 @@ function vids_update() {
         let proto = location.protocol;
         let host = location.hostname;
         let port = last_set.device.camera;
-        $('page-vids').innerHTML = `<frame src="${proto}//${host}:${port}"`;
+        let html = `<iframe src="${proto}//${host}:${port}"></iframe>`;
+        $('page-vids').innerHTML = html;
         return;
     }
     let time = Date.now();
