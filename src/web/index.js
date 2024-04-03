@@ -1200,7 +1200,7 @@ function init() {
     };
     for (name in menu) {
         let key = name.split('-')[0];
-        menu[name].onclick = () => {
+        menu[name].onmousedown = () => {
             menu_select(key);
         };
     }
@@ -1313,7 +1313,7 @@ function init() {
             $('command').value = '';
         }
     };
-    $('clear').onclick = () => {
+    $('clear').onmousedown = () => {
         logmsg = [];
         $('comm-log').innerHTML = '';
         $('command').focus();
@@ -1325,7 +1325,7 @@ function init() {
         }
         $('keypad').style.display = 'none';
     };
-    $('nozzle_temp').onclick = (ev) => {
+    $('nozzle_temp').onmousedown = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
@@ -1344,7 +1344,7 @@ function init() {
             persist.default_nozzle = sel.value;
         }
     }
-    $('nozzle2_temp').onclick = (ev) => {
+    $('nozzle2_temp').onmousedown = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
@@ -1357,7 +1357,7 @@ function init() {
         }
         ev.stopPropagation();
     };
-    $('bed_temp').onclick = (ev) => {
+    $('bed_temp').onmousedown = (ev) => {
         input_deselect();
         if (istouch) {
             $('keypad').style.display = '';
@@ -1377,20 +1377,20 @@ function init() {
         }
     }
     for (let i=0; i<10; i++) {
-        $(`kp-${i}`).onclick = (ev) => {
+        $(`kp-${i}`).onmousedown = (ev) => {
             if (input) {
                 input.value += i;
                 ev.stopPropagation();
             }
         };
     }
-    $('kp-bs').onclick = (ev) => {
+    $('kp-bs').onmousedown = (ev) => {
         if (input) {
             input.value = input.value.substring(0,input.value.length-1);
             ev.stopPropagation();
         }
     };
-    $('kp-ok').onclick = (ev) => {
+    $('kp-ok').onmousedown = (ev) => {
         if (input === $('bed_temp')) {
             setbed(42);
         }
@@ -1400,7 +1400,7 @@ function init() {
         ev.stopPropagation();
     };
     // reload page on status click
-    $('page-home').onclick = ev => {
+    $('page-home').onmousedown = ev => {
         if (ev.target.id === 'state') {
             reload();
         }
@@ -1417,7 +1417,7 @@ function init() {
     set_jog(parseFloat(persist.jog_val) || 1, $(persist.jog_sel || "j100"));
     set_jog_speed(parseFloat(persist.jog_speed) || 100, $(persist.jog_speed_sel || "js0100"));
     topbar(persist.topbar === 'true');
-    $('toptoggle').onclick = () => {
+    $('toptoggle').onmousedown = () => {
         topbar(!eval(persist.topbar));
     };
     render_temps();
