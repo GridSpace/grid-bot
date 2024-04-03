@@ -1200,7 +1200,7 @@ function init() {
     };
     for (name in menu) {
         let key = name.split('-')[0];
-        menu[name].onmousedown = () => {
+        menu[name].ontouchstart = menu[name].onmousedown = () => {
             menu_select(key);
         };
     }
