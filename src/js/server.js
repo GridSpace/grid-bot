@@ -631,7 +631,7 @@ function on_serial_line(line) {
     }
 
     // catch errors and report if not in a resend situation
-    if (line.indexOf("FIRMWARE_RESTART") > 0) {
+    if (status.print.run && !status.print.abort && line.indexOf("FIRMWARE_RESTART") > 0) {
         return job_abort();
     }
     if (line.indexOf("Error:") === 0) {
