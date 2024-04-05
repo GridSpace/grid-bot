@@ -631,6 +631,9 @@ function on_serial_line(line) {
     }
 
     // catch errors and report if not in a resend situation
+    if (line.indexOf("FIRMWARE_RESTART") > 0) {
+        return job_abort();
+    }
     if (line.indexOf("Error:") === 0) {
         status.error = {
             time: Date.now(),
