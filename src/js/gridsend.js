@@ -2,6 +2,13 @@
 
 module.exports = { start, restart, stop, status };
 
+/**
+ *
+ * @param {*} type device type
+ * @param {*} url usually live.grid.space
+ * @param {*} status device status
+ * @param {*} update called on file receipt with (filename, gcode)
+ */
 function start(type, url, status, update) {
     if (req) {
         throw "grid send already started";
